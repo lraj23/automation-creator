@@ -1,0 +1,15 @@
+{
+	"name": "automation-creator",
+	"version": "0.1.0",
+	"description": "Allows you to easily create Slack automations to replace workflows.",
+	"main": "app.js",
+	"type": "module",
+	"scripts": {
+		"start": "node --env-file=.env app.js",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"license": "MIT",
+	"dependencies": {
+		"@slack/bolt": "^4.6.0"
+	}
+}
