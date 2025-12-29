@@ -51,7 +51,7 @@ blocks.createAutomationStep1 = ({ automationName, automationShortDescription, au
 			action_id: "ignore-automation-short-description",
 			placeholder: {
 				type: "plain_text",
-				text: "Max 140 characters (optional)"
+				text: "Max 140 characters"
 			},
 			initial_value: automationShortDescription
 		},
@@ -131,33 +131,15 @@ blocks.createAutomationStep2 = ({ automationConfigurationToken, automationRefres
 		type: "section",
 		text: {
 			type: "mrkdwn",
-			text: "Enter your app configuration token and your refresh token. The first is used to create and manage your automation, but it expires soon after being issued. The refresh token is used to renew the first token when it expires."
+			text: "Enter your app configuration refresh token. Your actual configuration token is used to create and manage your automation, but it expires soon after being issued. The refresh token is used to renew the first token, and so it is all that is necessary to maintain the bot."
 		}
 	},
 	{
 		type: "section",
 		text: {
 			type: "mrkdwn",
-			text: "To get these tokens, first go to https://api.slack.com/apps. At the bottom, in \"Your App Configuration Tokens,\" click \"Generate Token.\" Make sure to choose this workspace."
+			text: "To get this token, go to https://api.slack.com/apps. At the bottom, in \"Your App Configuration Tokens,\" click \"Generate Token.\" Make sure to choose this workspace."
 		}
-	},
-	{
-		type: "input",
-		element: {
-			type: "plain_text_input",
-			action_id: "ignore-automation-configuration-token",
-			placeholder: {
-				type: "plain_text",
-				text: "xoxe.xoxp-TOKEN"
-			},
-			initial_value: automationConfigurationToken
-		},
-		label: {
-			type: "plain_text",
-			text: "Access Token (the first one)",
-			emoji: true
-		},
-		optional: false
 	},
 	{
 		type: "input",
@@ -172,7 +154,7 @@ blocks.createAutomationStep2 = ({ automationConfigurationToken, automationRefres
 		},
 		label: {
 			type: "plain_text",
-			text: "Refresh Token (the second one)",
+			text: "Refresh Token (the second token)",
 			emoji: true
 		},
 		optional: false

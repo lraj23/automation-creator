@@ -17,7 +17,6 @@ app.command("/create-automation", async ({ ack, body: { user_id }, respond }) =>
 		automationShortDescription: "",
 		automationLongDescription: "",
 		automationColor: "",
-		automationConfigurationToken: "",
 		automationRefreshToken: ""
 	};
 	saveState(automationCreator);
@@ -32,14 +31,9 @@ app.action("create-automation-step1", async ({ ack, body: { user: { id: user }, 
 	const automationCreator = getAutomationCreator();
 	if (!automationCreator.inProgressAutomations[user]) return await respond("Something went wrong. Try running /create-automation again!");
 	values = readableValues(values);
-	let configurationToken = "ignore-automation-configuration-token" in values ? values["ignore-automation-configuration-token"].value : automationCreator.inProgressAutomations[user].automationConfigurationToken;
 	let refreshToken = "ignore-automation-configuration-refresh-token" in values ? values["ignore-automation-configuration-refresh-token"].value : automationCreator.inProgressAutomations[user].automationRefreshToken;
 
-	automationCreator.inProgressAutomations[user] = {
-		...automationCreator.inProgressAutomations[user],
-		automationConfigurationToken: configurationToken,
-		automationRefreshToken: refreshToken
-	};
+	automationCreator.inProgressAutomations[user].automationRefreshToken = refreshToken;
 	saveState(automationCreator);
 	await respond({
 		text: "Create an automation",
@@ -59,7 +53,8 @@ app.action("create-automation-step2", async ({ ack, body: { user: { id: user }, 
 	if (!automationCreator.inProgressAutomations[user]) return await respond("Something went wrong. Try running /create-automation again!");
 	if (!name) return await warn(channel, user, "Enter an automation name!");
 	if (name.length > 35) return await warn(channel, user, "Make sure the name is under 35 characters long!");
-	if (shortDesc && shortDesc.length > 140) return await warn(channel, user, "Make sure the short description is under 140 characters long!");
+	if (!shortDesc) return await warn(channel, user, "Enter a short description!");
+	if (shortDesc.length > 140) return await warn(channel, user, "Make sure the short description is under 140 characters long!");
 	if (!longDesc) return await warn(channel, user, "Enter a long description!");
 	if (longDesc.length < 175) return await warn(channel, user, "Make sure the long description is at least 175 characters long!");
 	if (longDesc.length > 4000) return await warn(channel, user, "Make sure the long description is less than 4000 characters long!");
@@ -76,8 +71,6 @@ app.action("create-automation-step2", async ({ ack, body: { user: { id: user }, 
 		automationLongDescription: longDesc,
 		automationColor: color || "676767"
 	};
-	if (!automationCreator.inProgressAutomations[user].automationConfigurationToken) automationCreator.inProgressAutomations[user].automationConfigurationToken = "";
-	if (!automationCreator.inProgressAutomations[user].automationRefreshToken) automationCreator.inProgressAutomations[user].automationRefreshToken = "";
 	saveState(automationCreator);
 
 	await respond({
@@ -86,7 +79,73 @@ app.action("create-automation-step2", async ({ ack, body: { user: { id: user }, 
 	});
 });
 
-app.action("create-automation", async ({ ack }) => await ack());
+app.action("create-automation", async ({ ack, body: { user: { id: user }, channel: { id: channel }, state: { values } }, respond }) => {
+	await ack();
+	const automationCreator = getAutomationCreator();
+	if (!automationCreator.inProgressAutomations[user]) return await respond("Something went wrong. Try running /create-automation again!");
+	values = readableValues(values);
+	let refreshToken = "ignore-automation-configuration-refresh-token" in values ? values["ignore-automation-configuration-refresh-token"].value : automationCreator.inProgressAutomations[user].automationRefreshToken;
+
+	automationCreator.inProgressAutomations[user].automationRefreshToken = refreshToken;
+	saveState(automationCreator);
+	try {
+		const newToken = await app.client.tooling.tokens.rotate({
+			refresh_token: refreshToken
+		});
+		refreshToken = automationCreator.inProgressAutomations[user].automationRefreshToken = newToken.refresh_token;
+		automationCreator.configurationTokens[user] = newToken;
+		saveState(automationCreator);
+	} catch (e) {
+		console.error(e.data.error);
+		return await warn(channel, user, "There was an error with your refresh token. Make sure it is active, recent, and begins with \"xoxe-\"");
+	}
+
+	try {
+		await app.client.apps.manifest.create({
+			token: automationCreator.configurationTokens[user].token,
+			manifest: JSON.stringify({
+				display_information: {
+					name: automationCreator.inProgressAutomations[user].automationName,
+					long_description: automationCreator.inProgressAutomations[user].automationLongDescription,
+					description: automationCreator.inProgressAutomations[user].automationShortDescription,
+					background_color: "#" + automationCreator.inProgressAutomations[user].automationColor
+				},
+				settings: {
+					socket_mode_enabled: true,
+					interactivity: {
+						is_enabled: true
+					},
+					event_subscriptions: {
+						bot_events: [
+							"app_home_opened"
+						]
+					}
+				},
+				features: {
+					app_home: {
+						home_tab_enabled: true,
+						messages_tab_enabled: true,
+						messages_tab_read_only_enabled: false
+					},
+					bot_user: {
+						display_name: automationCreator.inProgressAutomations[user].automationName
+					}
+				},
+				oauth_config: {
+					scopes: {
+						bot: [
+							"chat:write",
+							"chat:write.public"
+						]
+					}
+				}
+			})
+		});
+	} catch (e) {
+		console.error(e);
+		return await warn(channel, user, "There was an error creating your automation... Make sure all your inputs are valid and try again!");
+	}
+});
 
 app.action(/^ignore-.+$/, async ({ ack }) => await ack());
 
