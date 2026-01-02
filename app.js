@@ -1,4 +1,5 @@
 import app from "./client.js";
+import "./server.js";
 import { getAutomationCreator, saveState } from "./file.js";
 import blocks from "./blocks.js";
 const warn = async (channel, user, text) => await app.client.chat.postEphemeral({
@@ -8,6 +9,7 @@ const warn = async (channel, user, text) => await app.client.chat.postEphemeral(
 	text
 });
 const readableValues = values => Object.fromEntries(Object.values(values).map(value => [Object.entries(value)[0][0], Object.entries(value)[0][1]]));
+const deployURL = process.env.AUTOMATION_CREATOR_DEPLOY_URL;
 
 app.command("/create-automation", async ({ ack, body: { user_id }, respond }) => {
 	await ack();
@@ -31,7 +33,7 @@ app.action("create-automation-step1", async ({ ack, body: { user: { id: user }, 
 	const automationCreator = getAutomationCreator();
 	if (!automationCreator.inProgressAutomations[user]) return await respond("Something went wrong. Try running /create-automation again!");
 	values = readableValues(values);
-	let refreshToken = "ignore-automation-configuration-refresh-token" in values ? values["ignore-automation-configuration-refresh-token"].value : automationCreator.inProgressAutomations[user].automationRefreshToken;
+	const refreshToken = "ignore-automation-configuration-refresh-token" in values ? values["ignore-automation-configuration-refresh-token"].value : automationCreator.inProgressAutomations[user].automationRefreshToken;
 
 	automationCreator.inProgressAutomations[user].automationRefreshToken = refreshToken;
 	saveState(automationCreator);
@@ -45,10 +47,10 @@ app.action("create-automation-step2", async ({ ack, body: { user: { id: user }, 
 	await ack();
 	const automationCreator = getAutomationCreator();
 	values = readableValues(values);
-	let name = "ignore-automation-name" in values ? values["ignore-automation-name"].value : automationCreator.inProgressAutomations[user].automationName;
-	let shortDesc = "ignore-automation-short-description" in values ? values["ignore-automation-short-description"].value : automationCreator.inProgressAutomations[user].automationShortDescription;
-	let longDesc = "ignore-automation-long-description" in values ? values["ignore-automation-long-description"].value : automationCreator.inProgressAutomations[user].automationLongDescription;
-	let color = "ignore-automation-color" in values ? values["ignore-automation-color"].value : automationCreator.inProgressAutomations[user].automationColor;
+	const name = "ignore-automation-name" in values ? values["ignore-automation-name"].value : automationCreator.inProgressAutomations[user].automationName;
+	const shortDesc = "ignore-automation-short-description" in values ? values["ignore-automation-short-description"].value : automationCreator.inProgressAutomations[user].automationShortDescription;
+	const longDesc = "ignore-automation-long-description" in values ? values["ignore-automation-long-description"].value : automationCreator.inProgressAutomations[user].automationLongDescription;
+	const color = "ignore-automation-color" in values ? values["ignore-automation-color"].value : automationCreator.inProgressAutomations[user].automationColor;
 
 	if (!automationCreator.inProgressAutomations[user]) return await respond("Something went wrong. Try running /create-automation again!");
 	if (!name) return await warn(channel, user, "Enter an automation name!");
@@ -101,7 +103,7 @@ app.action("create-automation", async ({ ack, body: { user: { id: user }, channe
 	}
 
 	try {
-		await app.client.apps.manifest.create({
+		const automation = await app.client.apps.manifest.create({
 			token: automationCreator.configurationTokens[user].token,
 			manifest: JSON.stringify({
 				display_information: {
@@ -111,13 +113,22 @@ app.action("create-automation", async ({ ack, body: { user: { id: user }, channe
 					background_color: "#" + automationCreator.inProgressAutomations[user].automationColor
 				},
 				settings: {
-					socket_mode_enabled: true,
+					socket_mode_enabled: false,
 					interactivity: {
-						is_enabled: true
+						is_enabled: true,
+						request_url: deployURL + "/interactivity",
+						message_menu_options_url: deployURL + "/interactivity"
 					},
 					event_subscriptions: {
+						request_url: deployURL + "/event-subscriptions",
 						bot_events: [
-							"app_home_opened"
+							"app_home_opened",
+							"message.im",
+							"message.channels",
+							"message.groups",
+							"message.mpim",
+							"reaction_added",
+							"member_joined_channel"
 						]
 					}
 				},
@@ -128,19 +139,56 @@ app.action("create-automation", async ({ ack, body: { user: { id: user }, channe
 						messages_tab_read_only_enabled: false
 					},
 					bot_user: {
-						display_name: automationCreator.inProgressAutomations[user].automationName
+						display_name: automationCreator.inProgressAutomations[user].automationName,
+						always_online: true
 					}
 				},
 				oauth_config: {
+					redirect_urls: [
+						deployURL + "/installed"
+					],
 					scopes: {
 						bot: [
+							"app_mentions:read",
+							"channels:history",
+							"channels:join",
+							"channels:manage",
+							"channels:read",
+							"channels:write.invites",
 							"chat:write",
-							"chat:write.public"
+							"chat:write.customize",
+							"chat:write.public",
+							"commands",
+							"groups:history",
+							"groups:read",
+							"groups:write",
+							"groups:write.invites",
+							"im:history",
+							"im:read",
+							"im:write",
+							"mpim:history",
+							"mpim:read",
+							"mpim:write",
+							"reactions:read",
+							"reactions:write",
+							"usergroups:read",
+							"usergroups:write",
+							"users.profile:read",
+							"users:read",
+							"users:write"
 						]
 					}
 				}
 			})
 		});
+
+		console.log(automation);
+		const authorizeURL = new URL(automation.oauth_authorize_url);
+		authorizeURL.searchParams.set("state", automation.app_id);
+
+		automationCreator.automations.push(automation);
+		await app.client.chat.postEphemeral({ channel, user, text: "Next step: Install your app onto the workspace with this link: <" + authorizeURL + "|Install Your Automation>" });
+		saveState(automationCreator);
 	} catch (e) {
 		console.error(e);
 		return await warn(channel, user, "There was an error creating your automation... Make sure all your inputs are valid and try again!");
