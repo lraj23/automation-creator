@@ -126,7 +126,7 @@ blocks.createAutomationStep1 = ({ automationName, automationShortDescription, au
 	}
 ];
 
-blocks.createAutomationStep2 = ({ automationConfigurationToken, automationRefreshToken }) => [
+blocks.createAutomationStep2 = ({ automationRefreshToken }) => [
 	{
 		type: "section",
 		text: {
@@ -206,6 +206,33 @@ blocks.createAutomationStep2 = ({ automationConfigurationToken, automationRefres
 				text: "Keep in mind that your automation and tokens are under your account, and that means you can always take control of them through the Slack page at https://api.slack.com/apps if you have issues. The developer of Automation Creator (<https://github.com/lraj23|lraj23> created this open source at <https://github.com/lraj23/automation-creator|lraj23/automation-creator>) is not responsible for the actions taken by your automations."
 			}
 		]
+	}
+];
+
+blocks.appHomePage = (body, automation) => [
+	{
+		type: "header",
+		text: {
+			type: "plain_text",
+			text: "Welcome to " + automation.displayInformation.automationName + "!"
+		}
+	},
+	{
+		type: "section",
+		text: {
+			type: "mrkdwn",
+			text: "From here you can view and edit your automation!"
+		}
+	}
+];
+
+blocks.appHomePageOther = (body, automation) => [
+	{
+		type: "section",
+		text: {
+			type: "mrkdwn",
+			text: automation.displayInformation.automationName + " was created by <@" + automation.tokens.authed_user.id + "> using Automation Creator. Contact them to learn more!"
+		}
 	}
 ];
 

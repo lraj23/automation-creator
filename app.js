@@ -1,3 +1,4 @@
+import CONSTS from "./consts.js";
 import app from "./client.js";
 import "./server.js";
 import { getAutomationCreator, saveState } from "./file.js";
@@ -18,8 +19,7 @@ app.command("/create-automation", async ({ ack, body: { user_id }, respond }) =>
 		automationName: "",
 		automationShortDescription: "",
 		automationLongDescription: "",
-		automationColor: "",
-		automationRefreshToken: ""
+		automationColor: ""
 	};
 	saveState(automationCreator);
 	await respond({
@@ -33,9 +33,7 @@ app.action("create-automation-step1", async ({ ack, body: { user: { id: user }, 
 	const automationCreator = getAutomationCreator();
 	if (!automationCreator.inProgressAutomations[user]) return await respond("Something went wrong. Try running /create-automation again!");
 	values = readableValues(values);
-	const refreshToken = "ignore-automation-configuration-refresh-token" in values ? values["ignore-automation-configuration-refresh-token"].value : automationCreator.inProgressAutomations[user].automationRefreshToken;
 
-	automationCreator.inProgressAutomations[user].automationRefreshToken = refreshToken;
 	saveState(automationCreator);
 	await respond({
 		text: "Create an automation",
@@ -88,13 +86,11 @@ app.action("create-automation", async ({ ack, body: { user: { id: user }, channe
 	values = readableValues(values);
 	let refreshToken = "ignore-automation-configuration-refresh-token" in values ? values["ignore-automation-configuration-refresh-token"].value : automationCreator.inProgressAutomations[user].automationRefreshToken;
 
-	automationCreator.inProgressAutomations[user].automationRefreshToken = refreshToken;
 	saveState(automationCreator);
 	try {
 		const newToken = await app.client.tooling.tokens.rotate({
 			refresh_token: refreshToken
 		});
-		refreshToken = automationCreator.inProgressAutomations[user].automationRefreshToken = newToken.refresh_token;
 		automationCreator.configurationTokens[user] = newToken;
 		saveState(automationCreator);
 	} catch (e) {
@@ -148,41 +144,14 @@ app.action("create-automation", async ({ ack, body: { user: { id: user }, channe
 						deployURL + "/installed"
 					],
 					scopes: {
-						bot: [
-							"app_mentions:read",
-							"channels:history",
-							"channels:join",
-							"channels:manage",
-							"channels:read",
-							"channels:write.invites",
-							"chat:write",
-							"chat:write.customize",
-							"chat:write.public",
-							"commands",
-							"groups:history",
-							"groups:read",
-							"groups:write",
-							"groups:write.invites",
-							"im:history",
-							"im:read",
-							"im:write",
-							"mpim:history",
-							"mpim:read",
-							"mpim:write",
-							"reactions:read",
-							"reactions:write",
-							"usergroups:read",
-							"usergroups:write",
-							"users.profile:read",
-							"users:read",
-							"users:write"
-						]
+						bot: CONSTS.AUTOMATION_CREATOR_SCOPES
 					}
 				}
 			})
 		});
+		automation.displayInformation = automationCreator.inProgressAutomations[user];
+		delete automationCreator.inProgressAutomations[user];
 
-		console.log(automation);
 		const authorizeURL = new URL(automation.oauth_authorize_url);
 		authorizeURL.searchParams.set("state", automation.app_id);
 
