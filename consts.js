@@ -35,15 +35,18 @@ CONSTS.GET_READABLE_VALUES = values => Object.fromEntries(Object.values(values).
 CONSTS.AUTOMATION_CREATOR_TRIGGERS = {
 	manual: {
 		text: "Button",
-		hasDetail: false
+		hasDetail: false,
+		hasSpecific: false
 	},
 	joinedChannel: {
 		text: "Join Channel",
-		hasDetail: true
+		hasDetail: true,
+		hasSpecific: false
 	},
 	addedReaction: {
 		text: "Add Reaction",
-		hasDetail: true
+		hasDetail: true,
+		hasSpecific: true
 	}
 };
 

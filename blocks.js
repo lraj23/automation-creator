@@ -241,60 +241,104 @@ blocks.appHomePage = automation => [
 	},
 	{
 		type: "actions",
-		elements: blocks.appHomePageTrigger(automation.currentState)
-	}
+		elements: [
+			{
+				type: "static_select",
+				placeholder: {
+					type: "plain_text",
+					text: "Choose a trigger",
+					emoji: true
+				},
+				options: Object.entries(CONSTS.AUTOMATION_CREATOR_TRIGGERS).map(trigger => ({
+					text: {
+						type: "plain_text",
+						text: trigger[1].text,
+						emoji: true
+					},
+					value: trigger[0]
+				})),
+				initial_option: automation.currentState.trigger.type ? {
+					text: {
+						type: "plain_text",
+						text: CONSTS.AUTOMATION_CREATOR_TRIGGERS[automation.currentState.trigger.type].text,
+						emoji: true
+					},
+					value: automation.currentState.trigger.type
+				} : undefined,
+				action_id: "edit-automation-trigger",
+			},
+			...(CONSTS.AUTOMATION_CREATOR_TRIGGERS[automation.currentState.trigger.type].hasDetail ? [{
+				joinedChannel: {
+					type: "conversations_select",
+					placeholder: {
+						type: "plain_text",
+						text: "Choose a channel",
+						emoji: true
+					},
+					initial_conversation: blocks.isValidDetail(automation.currentState.trigger.detail) ? automation.currentState.trigger.detail : undefined,
+					action_id: "edit-automation-trigger-detail"
+				},
+				addedReaction: {
+					type: "conversations_select",
+					placeholder: {
+						type: "plain_text",
+						text: "Choose a channel",
+						emoji: true
+					},
+					initial_conversation: blocks.isValidDetail(automation.currentState.trigger.detail) ? automation.currentState.trigger.detail : undefined,
+					action_id: "edit-automation-trigger-detail"
+				}
+			}[automation.currentState.trigger.type]] : [])
+		]
+	},
+	...blocks.appHomePageTriggerDetail(automation.currentState),
+	{
+		type: "divider"
+	},
+	...blocks.appHomePageTriggerSpecific(automation.currentState)
 ];
 
-blocks.appHomePageTrigger = (currentState) => {
-	const result = [
-		{
-			type: "static_select",
-			placeholder: {
-				type: "plain_text",
-				text: "Choose a trigger",
-				emoji: true
-			},
-			options: Object.entries(CONSTS.AUTOMATION_CREATOR_TRIGGERS).map(trigger => ({
-				text: {
-					type: "plain_text",
-					text: trigger[1].text,
-					emoji: true
-				},
-				value: trigger[0]
-			})),
-			initial_option: currentState.trigger.type ? {
-				text: {
-					type: "plain_text",
-					text: CONSTS.AUTOMATION_CREATOR_TRIGGERS[currentState.trigger.type].text,
-					emoji: true
-				},
-				value: currentState.trigger.type
-			} : undefined,
-			action_id: "edit-automation-trigger",
-		}
-	];
-	if (CONSTS.AUTOMATION_CREATOR_TRIGGERS[currentState.trigger.type].hasDetail) result.push({
-		joinedChannel: {
-			type: "conversations_select",
-			placeholder: {
-				type: "plain_text",
-				text: "Choose a channel",
-				emoji: true
-			},
-			action_id: "edit-automation-trigger-detail"
-		},
-		addedReaction: {
-			type: "conversations_select",
-			placeholder: {
-				type: "plain_text",
-				text: "Choose a channel",
-				emoji: true
-			},
-			action_id: "edit-automation-trigger-detail"
-		}
-	}[currentState.trigger.type]);
-	return result;
+blocks.appHomePageTriggerDetail = currentState => {
+	if (!currentState.trigger.detail) return [];
+	if (currentState.trigger.detail === "Unavailable") return [{
+		type: "context",
+		elements: [
+			{
+				type: "mrkdwn",
+				text: "This channel doesn't seem to be available. If it's private, try adding this automation to that channel first and then trying again. Sorry, but automations do not work in direct messages."
+			}
+		]
+	}];
+	else return [];
 };
+
+blocks.appHomePageTriggerSpecific = currentState => {
+	if (!isValidDetail(currentState.trigger.detail)) return [];
+	return CONSTS.AUTOMATION_CREATOR_TRIGGERS[currentState.trigger.type].hasSpecific ? [{
+		addedReaction: {
+			type: "input",
+			element: {
+				type: "plain_text_input",
+				placeholder: {
+					type: "plain_text",
+					text: "No colons",
+					emoji: true
+				},
+				initial_value: currentState.trigger.specific,
+				action_id: "edit-automation-trigger-specific"
+			},
+			label: {
+				type: "plain_text",
+				text: "Enter the name of the emoji",
+				emoji: true
+			},
+			optional: false,
+			dispatch_action: true
+		}
+	}[currentState.trigger.type]] : [];
+}
+
+blocks.isValidDetail = detail => detail === "Unavailable" ? false : detail;
 
 blocks.appHomePageOther = automation => [
 	{

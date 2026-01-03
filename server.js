@@ -19,6 +19,7 @@ const server = http.createServer(async (req, res) => {
 		res.writeHead(400, { "Content-Type": "text/plain" });
 		res.end(msg);
 	};
+	const publishView = async (token, user_id, blocks) => await app.client.views.publish({ token, user_id, view: { type: "home", blocks } });
 
 	switch (fullURL.pathname.slice(deployURL.pathname.length)) {
 		case "/installed": {
@@ -37,32 +38,30 @@ const server = http.createServer(async (req, res) => {
 					client_secret: automation.credentials.client_secret
 				});
 			} catch (e) {
-				tokens.error = e.data.error;
-				console.error(e);
+				console.error(e.data.error);
+				return fail400("There was an error (" + e.data.error + "). Try opening the authorization link again. If this keeps happening, contact the developer of Automation Creator on this workspace.");
 			}
-			if (tokens.ok) {
-				let scopeIsSame = true;
-				if (tokens.scope.split(",").length !== CONSTS.AUTOMATION_CREATOR_SCOPES.length) scopeIsSame = false;
-				else for (let i = 0; i < tokens.scope.length; i++)
-					if (tokens.scope.split(",").sort()[i] !== CONSTS.AUTOMATION_CREATOR_SCOPES.sort()[i]) scopeIsSame = false;
-				if (!scopeIsSame) {
-					res.writeHead(301, {
-						Location: automation.oauth_authorize_url + "&state=" + automation.app_id
-					});
-					return res.end();
-				}
-				const dmID = await app.client.conversations.open({
-					token: tokens.access_token,
-					users: tokens.authed_user.id
-				});
+			let scopeIsSame = true;
+			if (tokens.scope.split(",").length !== CONSTS.AUTOMATION_CREATOR_SCOPES.length) scopeIsSame = false;
+			else for (let i = 0; i < tokens.scope.length; i++)
+				if (tokens.scope.split(",").sort()[i] !== CONSTS.AUTOMATION_CREATOR_SCOPES.sort()[i]) scopeIsSame = false;
+			if (!scopeIsSame) {
 				res.writeHead(301, {
-					Location: "https://" + automation.team_domain + ".slack.com/archives/" + dmID.channel.id
+					Location: automation.oauth_authorize_url + "&state=" + automation.app_id
 				});
-				res.end();
-				automation.authorized = true;
-				automation.tokens = tokens;
-				saveState(automationCreator);
-			} else fail400("There was an error (" + tokens.error + "). Try opening the authorization link again. If this keeps happening, contact the developer of Automation Creator on this workspace.");
+				return res.end();
+			}
+			const dmID = await app.client.conversations.open({
+				token: tokens.access_token,
+				users: tokens.authed_user.id
+			});
+			res.writeHead(301, {
+				Location: "https://" + automation.team_domain + ".slack.com/archives/" + dmID.channel.id
+			});
+			res.end();
+			automation.authorized = true;
+			automation.tokens = tokens;
+			saveState(automationCreator);
 			break;
 		}
 		case "/event-subscriptions": {
@@ -85,14 +84,7 @@ const server = http.createServer(async (req, res) => {
 				if (!automation) return fail400("There was an error. This automation does not seem to exist.");
 				switch (body.event.type) {
 					case "app_home_opened":
-						await app.client.views.publish({
-							token: automation.tokens.access_token,
-							user_id: body.event.user,
-							view: {
-								type: "home",
-								blocks: blocks[body.event.user === automation.tokens.authed_user.id ? "appHomePage" : "appHomePageOther"](automation)
-							}
-						});
+						await publishView(automation.tokens.access_token, body.event.user, blocks[body.event.user === automation.tokens.authed_user.id ? "appHomePage" : "appHomePageOther"](automation));
 						break;
 				}
 			});
@@ -122,21 +114,29 @@ const server = http.createServer(async (req, res) => {
 							steps: []
 						};
 						saveState(automationCreator);
-						await app.client.views.publish({
-							token: automation.tokens.access_token,
-							user_id: automation.tokens.authed_user.id,
-							view: {
-								type: "home",
-								blocks: blocks.appHomePage(automation)
-							}
-						});
+						await publishView(automation.tokens.access_token, automation.tokens.authed_user.id, blocks.appHomePage(automation));
 						break;
 					}
 					case "edit-automation-trigger-detail": {
 						const detail = "edit-automation-trigger-detail" in values ? values["edit-automation-trigger-detail"].selected_conversation : automation.currentState.trigger.detail;
+						let channel;
+						try {
+							channel = (await app.client.conversations.info({ token: automation.tokens.access_token, channel: detail })).channel.id;
+						} catch (e) {
+							automation.currentState.trigger.detail = channel = "Unavailable";
+							saveState(automationCreator);
+							await publishView(automation.tokens.access_token, automation.tokens.authed_user.id, blocks.appHomePage(automation));
+						}
+						if (channel !== "Unavailable") automation.currentState.trigger.detail = channel;
+						saveState(automationCreator);
+						await publishView(automation.tokens.access_token, automation.tokens.authed_user.id, blocks.appHomePage(automation));
 						break;
 					}
+					case "edit-automation-trigger-specific":
+						const specific = "edit-automation-trigger-specific" in values ? values["edit-automation-trigger-specific"].value : automation.currentState.trigger.specific;
+						break;
 					default:
+						break;
 				}
 				res.writeHead(200, {
 					"Content-Type": "text/plain"
