@@ -9,7 +9,6 @@ const warn = async (channel, user, text) => await app.client.chat.postEphemeral(
 	blocks: blocks.warn(text),
 	text
 });
-const readableValues = values => Object.fromEntries(Object.values(values).map(value => [Object.entries(value)[0][0], Object.entries(value)[0][1]]));
 const deployURL = process.env.AUTOMATION_CREATOR_DEPLOY_URL;
 
 app.command("/create-automation", async ({ ack, body: { user_id }, respond }) => {
@@ -32,7 +31,7 @@ app.action("create-automation-step1", async ({ ack, body: { user: { id: user }, 
 	await ack();
 	const automationCreator = getAutomationCreator();
 	if (!automationCreator.inProgressAutomations[user]) return await respond("Something went wrong. Try running /create-automation again!");
-	values = readableValues(values);
+	values = CONSTS.GET_READABLE_VALUES(values);
 
 	saveState(automationCreator);
 	await respond({
@@ -44,7 +43,7 @@ app.action("create-automation-step1", async ({ ack, body: { user: { id: user }, 
 app.action("create-automation-step2", async ({ ack, body: { user: { id: user }, channel: { id: channel }, state: { values } }, respond }) => {
 	await ack();
 	const automationCreator = getAutomationCreator();
-	values = readableValues(values);
+	values = CONSTS.GET_READABLE_VALUES(values);
 	const name = "ignore-automation-name" in values ? values["ignore-automation-name"].value : automationCreator.inProgressAutomations[user].automationName;
 	const shortDesc = "ignore-automation-short-description" in values ? values["ignore-automation-short-description"].value : automationCreator.inProgressAutomations[user].automationShortDescription;
 	const longDesc = "ignore-automation-long-description" in values ? values["ignore-automation-long-description"].value : automationCreator.inProgressAutomations[user].automationLongDescription;
@@ -83,7 +82,7 @@ app.action("create-automation", async ({ ack, body: { user: { id: user }, channe
 	await ack();
 	const automationCreator = getAutomationCreator();
 	if (!automationCreator.inProgressAutomations[user]) return await respond("Something went wrong. Try running /create-automation again!");
-	values = readableValues(values);
+	values = CONSTS.GET_READABLE_VALUES(values);
 	let refreshToken = "ignore-automation-configuration-refresh-token" in values ? values["ignore-automation-configuration-refresh-token"].value : automationCreator.inProgressAutomations[user].automationRefreshToken;
 
 	saveState(automationCreator);

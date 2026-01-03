@@ -30,4 +30,21 @@ CONSTS.AUTOMATION_CREATOR_SCOPES = [
 	"users:write"
 ];
 
+CONSTS.GET_READABLE_VALUES = values => Object.fromEntries(Object.values(values).map(block => Object.entries(block)).flat());
+
+CONSTS.AUTOMATION_CREATOR_TRIGGERS = {
+	manual: {
+		text: "Button",
+		hasDetail: false
+	},
+	joinedChannel: {
+		text: "Join Channel",
+		hasDetail: true
+	},
+	addedReaction: {
+		text: "Add Reaction",
+		hasDetail: true
+	}
+};
+
 export default CONSTS;

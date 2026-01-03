@@ -1,3 +1,4 @@
+import CONSTS from "./consts.js";
 const blocks = {};
 
 blocks.warn = text => [
@@ -209,7 +210,7 @@ blocks.createAutomationStep2 = ({ automationRefreshToken }) => [
 	}
 ];
 
-blocks.appHomePage = (body, automation) => [
+blocks.appHomePage = automation => [
 	{
 		type: "header",
 		text: {
@@ -223,15 +224,84 @@ blocks.appHomePage = (body, automation) => [
 			type: "mrkdwn",
 			text: "From here you can view and edit your automation!"
 		}
-	}
-];
-
-blocks.appHomePageOther = (body, automation) => [
+	},
+	{
+		type: "header",
+		text: {
+			type: "plain_text",
+			text: "Trigger"
+		}
+	},
 	{
 		type: "section",
 		text: {
 			type: "mrkdwn",
-			text: automation.displayInformation.automationName + " was created by <@" + automation.tokens.authed_user.id + "> using Automation Creator. Contact them to learn more!"
+			text: "Choose the trigger for your automation here. This is what will cause your automation to run."
+		}
+	},
+	{
+		type: "actions",
+		elements: blocks.appHomePageTrigger(automation.currentState)
+	}
+];
+
+blocks.appHomePageTrigger = (currentState) => {
+	const result = [
+		{
+			type: "static_select",
+			placeholder: {
+				type: "plain_text",
+				text: "Choose a trigger",
+				emoji: true
+			},
+			options: Object.entries(CONSTS.AUTOMATION_CREATOR_TRIGGERS).map(trigger => ({
+				text: {
+					type: "plain_text",
+					text: trigger[1].text,
+					emoji: true
+				},
+				value: trigger[0]
+			})),
+			initial_option: currentState.trigger.type ? {
+				text: {
+					type: "plain_text",
+					text: CONSTS.AUTOMATION_CREATOR_TRIGGERS[currentState.trigger.type].text,
+					emoji: true
+				},
+				value: currentState.trigger.type
+			} : undefined,
+			action_id: "edit-automation-trigger",
+		}
+	];
+	if (CONSTS.AUTOMATION_CREATOR_TRIGGERS[currentState.trigger.type].hasDetail) result.push({
+		joinedChannel: {
+			type: "conversations_select",
+			placeholder: {
+				type: "plain_text",
+				text: "Choose a channel",
+				emoji: true
+			},
+			action_id: "edit-automation-trigger-detail"
+		},
+		addedReaction: {
+			type: "conversations_select",
+			placeholder: {
+				type: "plain_text",
+				text: "Choose a channel",
+				emoji: true
+			},
+			action_id: "edit-automation-trigger-detail"
+		}
+	}[currentState.trigger.type]);
+	return result;
+};
+
+blocks.appHomePageOther = automation => [
+	{
+		type: "section",
+		text: {
+			type: "mrkdwn",
+			text: automation.displayInformation.automationName + " was created by <@" + automation.tokens.authed_user.id + "> using Automation Creator. Its trigger is \"" + CONSTS.AUTOMATION_CREATOR_TRIGGERS[automation.currentState.trigger.type].text + ".\" Contact them to learn more!"
 		}
 	}
 ];
