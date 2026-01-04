@@ -58,7 +58,7 @@ CONSTS.AUTOMATION_CREATOR_STEPS = {
 	},
 	addReaction: {
 		text: "Add a Reaction",
-		hasDetail: true,
+		hasDetail: false,
 		hasSpecific: true
 	}
 }

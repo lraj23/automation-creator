@@ -102,7 +102,7 @@ const server = http.createServer(async (req, res) => {
 			req.on("data", chunk => body += chunk.toString());
 			req.on("end", async () => {
 				try {
-					body = JSON.parse(decodeURIComponent(body).slice(8));
+					body = JSON.parse(decodeURIComponent(body.split("+").join(" ")).slice(8));
 				} catch (e) {
 					return fail400("Invalid data.");
 				}
@@ -161,6 +161,47 @@ const server = http.createServer(async (req, res) => {
 							]
 						};
 						break;
+					}
+					case "edit-automation-step-detail": {
+						const detail = "edit-automation-step-detail" in values ? values["edit-automation-step-detail"].selected_conversation : automation.currentState.steps[0].detail;
+						let channel;
+						try {
+							channel = (await app.client.conversations.info({ token: automation.tokens.access_okten, channel: detail })).channel.id;
+						} catch (e) {
+							channel = "Unavailable";
+						}
+						automation.currentState = {
+							trigger: automation.currentState.trigger,
+							steps: [
+								{
+									type: automation.currentState.steps[0].type,
+									detail: channel
+								}
+							]
+						};
+						break;
+					}
+					case "edit-automation-step-specific": {
+						const specific = "edit-automation-step-specific" in values ? values["edit-automation-step-specific"].value : automation.currentState.steps[0].specific;
+						automation.currentState = {
+							trigger: automation.currentState.trigger,
+							steps: [
+								{
+									type: automation.currentState.steps[0].type,
+									detail: automation.currentState.steps[0].detail,
+									specific: specific || null
+								}
+							]
+						};
+						break;
+					}
+					case "save-automation": {
+						const triggerType = "edit-automation-trigger" in values ? values["edit-automation-trigger"].selected_option?.value : automation.currentState.trigger.type;
+						const triggerDetail = "edit-automation-trigger-detail" in values ? values["edit-automation-trigger-detail"].selected_conversation : automation.currentState.trigger.detail;
+						const triggerSpecific = "edit-automation-trigger-specific" in values ? values["edit-automation-trigger-specific"].value : automation.currentState.trigger.specific;
+						const stepType = "edit-automation-step" in values ? values["edit-automation-step"].selected_option?.value : automation.currentState.steps[0].type;
+						const stepDetail = "edit-automation-step-detail" in values ? values["edit-automation-step-detail"].selected_conversation : automation.currentState.steps[0].detail;
+						const stepSpecific = "edit-automation-step-specific" in values ? values["edit-automation-step-specific"].value : automation.currentState.steps[0].specific;
 					}
 					default:
 						break;

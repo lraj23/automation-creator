@@ -296,7 +296,10 @@ blocks.appHomePage = automation => [
 		type: "divider"
 	},
 	...blocks.appHomePageTriggerSpecific(automation.currentState),
-	...blocks.appHomePageSteps(automation.currentState)
+	...blocks.appHomePageSteps(automation.currentState),
+	...blocks.appHomePageStepsDetailWarning(automation.currentState),
+	...blocks.appHomePageStepsSpecific(automation.currentState),
+	...blocks.appHomePageUpdateButton(automation.currentState)
 ];
 
 blocks.appHomePageTriggerDetailWarning = currentState => {
@@ -310,7 +313,7 @@ blocks.appHomePageTriggerDetailWarning = currentState => {
 			}
 		]
 	}];
-	else return [];
+	return [];
 };
 
 blocks.appHomePageTriggerSpecific = currentState => {
@@ -343,7 +346,7 @@ blocks.appHomePageSteps = currentState => {
 	if (!currentState.trigger.type) return [];
 	if (CONSTS.AUTOMATION_CREATOR_TRIGGERS[currentState.trigger.type].hasDetail && !blocks.isValidDetail(currentState.trigger.detail)) return [];
 	if (CONSTS.AUTOMATION_CREATOR_TRIGGERS[currentState.trigger.type].hasSpecific && !currentState.trigger.specific) return [];
-	else return [
+	return [
 		{
 			type: "header",
 			text: {
@@ -385,6 +388,48 @@ blocks.appHomePageSteps = currentState => {
 						value: currentState.steps[0].type
 					} : undefined,
 					action_id: "edit-automation-step"
+				},
+				...(currentState.steps[0] ? CONSTS.AUTOMATION_CREATOR_STEPS[currentState.steps[0].type].hasDetail ? [{
+					sendMessage: {
+						type: "conversations_select",
+						placeholder: {
+							type: "plain_text",
+							text: "Choose a channel",
+							emoji: true
+						},
+						initial_conversation: blocks.isValidDetail(currentState.steps[0].detail) ? currentState.steps[0].detail : undefined,
+						action_id: "edit-automation-step-detail"
+					},
+					addReaction: {
+						type: "conversations_select",
+						placeholder: {
+							type: "plain_text",
+							text: "Choose a channel",
+							emoji: true
+						},
+						initial_conversation: blocks.isValidDetail(currentState.steps[0].detail) ? currentState.steps[0].detail : undefined,
+						action_id: "edit-automation-step-detail"
+					}
+				}[currentState.steps[0].type]] : [] : [])
+			]
+		},
+		...(blocks.appHomePageStepsDetailWarning(currentState).length ? [] : [{
+			type: "divider"
+		}])
+	];
+};
+
+blocks.appHomePageStepsDetailWarning = currentState => {
+	if (!currentState.steps[0]) return [];
+	if (!currentState.steps[0].detail) return [];
+	if (currentState.steps[0].detail !== "Unavailable") return [];
+	return [
+		{
+			type: "context",
+			elements: [
+				{
+					type: "mrkdwn",
+					text: "This channel doesn't seem to be available. If it's private, try adding this automation to that channel first and then trying again. Sorry, but automations do not work in direct messages."
 				}
 			]
 		},
@@ -392,6 +437,75 @@ blocks.appHomePageSteps = currentState => {
 			type: "divider"
 		}
 	];
+};
+
+blocks.appHomePageStepsSpecific = currentState => {
+	if (!currentState.steps[0]) return [];
+	if (CONSTS.AUTOMATION_CREATOR_STEPS[currentState.steps[0].type].hasDetail && !blocks.isValidDetail(currentState.steps[0].detail)) return [];
+	return CONSTS.AUTOMATION_CREATOR_STEPS[currentState.steps[0].type].hasSpecific ? [{
+		sendMessage: {
+			type: "input",
+			element: {
+				type: "plain_text_input",
+				placeholder: {
+					type: "plain_text",
+					text: "Message",
+					emoji: true
+				},
+				initial_value: currentState.steps[0].specific || undefined,
+				action_id: "edit-automation-step-specific"
+			},
+			label: {
+				type: "plain_text",
+				text: "Enter the message to send",
+				emoji: true
+			},
+			optional: false,
+			dispatch_action: true
+		},
+		addReaction: {
+			type: "input",
+			element: {
+				type: "plain_text_input",
+				placeholder: {
+					type: "plain_text",
+					text: "No colons",
+					emoji: true
+				},
+				initial_value: currentState.steps[0].specific || undefined,
+				action_id: "edit-automation-step-specific"
+			},
+			label: {
+				type: "plain_text",
+				text: "Enter the name of the emoji",
+				emoji: true
+			},
+			optional: false,
+			dispatch_action: true
+		}
+	}[currentState.steps[0].type], { type: "divider" }] : [];
+};
+
+blocks.appHomePageUpdateButton = currentState => {
+	if (!currentState.steps[0]) return [];
+	if (CONSTS.AUTOMATION_CREATOR_STEPS[currentState.steps[0].type].hasDetail && !blocks.isValidDetail(currentState.steps[0].detail)) return [];
+	if (CONSTS.AUTOMATION_CREATOR_STEPS[currentState.steps[0].type].hasSpecific && !currentState.steps[0].specific) return [];
+	return [{
+		type: "actions",
+		elements: [
+			{
+				type: "button",
+				text: {
+					type: "plain_text",
+					text: "Save",
+					emoji: true
+				},
+				style: "primary",
+				value: "save-automation",
+				action_id: "save-automation"
+			}
+		]
+	}];
 };
 
 blocks.isValidDetail = detail => detail === "Unavailable" ? false : detail;
