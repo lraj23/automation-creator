@@ -36,17 +36,27 @@ CONSTS.AUTOMATION_CREATOR_TRIGGERS = {
 	manual: {
 		text: "Button",
 		hasDetail: false,
-		hasSpecific: false
+		hasSpecific: false,
+		permittedSteps: [
+			"sendMessage"
+		]
 	},
 	joinedChannel: {
 		text: "Join Channel",
 		hasDetail: true,
-		hasSpecific: false
+		hasSpecific: false,
+		permittedSteps: [
+			"sendMessage"
+		]
 	},
 	addedReaction: {
 		text: "Add Reaction",
 		hasDetail: true,
-		hasSpecific: true
+		hasSpecific: true,
+		permittedSteps: [
+			"sendMessage",
+			"addReaction"
+		]
 	}
 };
 

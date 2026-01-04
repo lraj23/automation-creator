@@ -82,7 +82,7 @@ const server = http.createServer(async (req, res) => {
 				const automationCreator = getAutomationCreator();
 				const automation = automationCreator.automations.find(automation => automation.app_id === body.api_app_id);
 				if (!automation) return fail400("There was an error. This automation does not seem to exist.");
-				if (!automation.currentState) automation.currentState = {
+				if (!automation.editingState) automation.editingState = {
 					trigger: {
 						type: null
 					},
@@ -93,7 +93,62 @@ const server = http.createServer(async (req, res) => {
 					case "app_home_opened":
 						await publishView(automation.tokens.access_token, body.event.user, blocks[body.event.user === automation.tokens.authed_user.id ? "appHomePage" : "appHomePageOther"](automation));
 						break;
+					case "reaction_added":
+						if (!automation.activeState) break;
+						if (automation.activeState.trigger.type !== "addedReaction") break;
+						if (automation.activeState.trigger.detail !== body.event.item.channel) break;
+						if (automation.activeState.trigger.specific !== body.event.reaction) break;
+						switch (automation.activeState.steps[0].type) {
+							case "sendMessage":
+								try {
+									await app.client.chat.postMessage({
+										token: automation.tokens.access_token,
+										channel: automation.activeState.steps[0].detail,
+										text: automation.activeState.steps[0].specific
+									});
+								} catch (e) {
+									console.error(e.data.error);
+								}
+								break;
+							case "addReaction":
+								try {
+									await app.client.reactions.add({
+										token: automation.tokens.access_token,
+										channel: automation.activeState.trigger.detail,
+										name: automation.activeState.steps[0].specific,
+										timestamp: body.event.item.ts
+									});
+								} catch (e) {
+									console.error(e.data.error);
+								}
+								break;
+						}
+						break;
+					case "member_joined_channel":
+						if (!automation.activeState) break;
+						if (automation.activeState.trigger.type !== "joinedChannel") break;
+						if (automation.activeState.trigger.detail !== body.event.channel) break;
+						switch (automation.activeState.steps[0].type) {
+							case "sendMessage":
+								try {
+									await app.client.chat.postMessage({
+										token: automation.tokens.access_token,
+										channel: automation.activeState.steps[0].detail,
+										text: automation.activeState.steps[0].specific
+									});
+								} catch (e) {
+									console.error(e.data.error);
+								}
+								break;
+						}
+						break;
+					default:
+						break;
 				}
+				res.writeHead(200, {
+					"Content-Type": "text/plain"
+				});
+				res.end();
 			});
 			break;
 		}
@@ -112,8 +167,8 @@ const server = http.createServer(async (req, res) => {
 				if (!automation) return fail400("There was an error. This automation does not seem to exist.");
 				switch (body.actions[0].action_id) {
 					case "edit-automation-trigger": {
-						const trigger = "edit-automation-trigger" in values ? values["edit-automation-trigger"].selected_option?.value : automation.currentState.trigger.type;
-						automation.currentState = {
+						const trigger = "edit-automation-trigger" in values ? values["edit-automation-trigger"].selected_option?.value : automation.editingState.trigger.type;
+						automation.editingState = {
 							trigger: {
 								type: trigger || null
 							},
@@ -122,16 +177,16 @@ const server = http.createServer(async (req, res) => {
 						break;
 					}
 					case "edit-automation-trigger-detail": {
-						const detail = "edit-automation-trigger-detail" in values ? values["edit-automation-trigger-detail"].selected_conversation : automation.currentState.trigger.detail;
+						const detail = "edit-automation-trigger-detail" in values ? values["edit-automation-trigger-detail"].selected_conversation : automation.editingState.trigger.detail;
 						let channel;
 						try {
 							channel = (await app.client.conversations.info({ token: automation.tokens.access_token, channel: detail })).channel.id;
 						} catch (e) {
 							channel = "Unavailable";
 						}
-						automation.currentState = {
+						automation.editingState = {
 							trigger: {
-								type: automation.currentState.trigger.type,
+								type: automation.editingState.trigger.type,
 								detail: channel
 							},
 							steps: []
@@ -139,11 +194,11 @@ const server = http.createServer(async (req, res) => {
 						break;
 					}
 					case "edit-automation-trigger-specific": {
-						const specific = "edit-automation-trigger-specific" in values ? values["edit-automation-trigger-specific"].value : automation.currentState.trigger.specific;
-						automation.currentState = {
+						const specific = "edit-automation-trigger-specific" in values ? values["edit-automation-trigger-specific"].value : automation.editingState.trigger.specific;
+						automation.editingState = {
 							trigger: {
-								type: automation.currentState.trigger.type,
-								detail: automation.currentState.trigger.detail,
+								type: automation.editingState.trigger.type,
+								detail: automation.editingState.trigger.detail,
 								specific
 							},
 							steps: []
@@ -151,9 +206,9 @@ const server = http.createServer(async (req, res) => {
 						break;
 					}
 					case "edit-automation-step": {
-						const step = "edit-automation-step" in values ? values["edit-automation-step"].selected_option?.value : automation.currentState.steps[0].type;
-						automation.currentState = {
-							trigger: automation.currentState.trigger,
+						const step = "edit-automation-step" in values ? values["edit-automation-step"].selected_option?.value : automation.editingState.steps[0].type;
+						automation.editingState = {
+							trigger: automation.editingState.trigger,
 							steps: [
 								{
 									type: step || null
@@ -163,18 +218,18 @@ const server = http.createServer(async (req, res) => {
 						break;
 					}
 					case "edit-automation-step-detail": {
-						const detail = "edit-automation-step-detail" in values ? values["edit-automation-step-detail"].selected_conversation : automation.currentState.steps[0].detail;
+						const detail = "edit-automation-step-detail" in values ? values["edit-automation-step-detail"].selected_conversation : automation.editingState.steps[0].detail;
 						let channel;
 						try {
-							channel = (await app.client.conversations.info({ token: automation.tokens.access_okten, channel: detail })).channel.id;
+							channel = (await app.client.conversations.info({ token: automation.tokens.access_token, channel: detail })).channel.id;
 						} catch (e) {
 							channel = "Unavailable";
 						}
-						automation.currentState = {
-							trigger: automation.currentState.trigger,
+						automation.editingState = {
+							trigger: automation.editingState.trigger,
 							steps: [
 								{
-									type: automation.currentState.steps[0].type,
+									type: automation.editingState.steps[0].type,
 									detail: channel
 								}
 							]
@@ -182,13 +237,13 @@ const server = http.createServer(async (req, res) => {
 						break;
 					}
 					case "edit-automation-step-specific": {
-						const specific = "edit-automation-step-specific" in values ? values["edit-automation-step-specific"].value : automation.currentState.steps[0].specific;
-						automation.currentState = {
-							trigger: automation.currentState.trigger,
+						const specific = "edit-automation-step-specific" in values ? values["edit-automation-step-specific"].value : automation.editingState.steps[0].specific;
+						automation.editingState = {
+							trigger: automation.editingState.trigger,
 							steps: [
 								{
-									type: automation.currentState.steps[0].type,
-									detail: automation.currentState.steps[0].detail,
+									type: automation.editingState.steps[0].type,
+									detail: automation.editingState.steps[0].detail,
 									specific: specific || null
 								}
 							]
@@ -196,12 +251,26 @@ const server = http.createServer(async (req, res) => {
 						break;
 					}
 					case "save-automation": {
-						const triggerType = "edit-automation-trigger" in values ? values["edit-automation-trigger"].selected_option?.value : automation.currentState.trigger.type;
-						const triggerDetail = "edit-automation-trigger-detail" in values ? values["edit-automation-trigger-detail"].selected_conversation : automation.currentState.trigger.detail;
-						const triggerSpecific = "edit-automation-trigger-specific" in values ? values["edit-automation-trigger-specific"].value : automation.currentState.trigger.specific;
-						const stepType = "edit-automation-step" in values ? values["edit-automation-step"].selected_option?.value : automation.currentState.steps[0].type;
-						const stepDetail = "edit-automation-step-detail" in values ? values["edit-automation-step-detail"].selected_conversation : automation.currentState.steps[0].detail;
-						const stepSpecific = "edit-automation-step-specific" in values ? values["edit-automation-step-specific"].value : automation.currentState.steps[0].specific;
+						const triggerType = "edit-automation-trigger" in values ? values["edit-automation-trigger"].selected_option?.value : automation.editingState.trigger.type;
+						const triggerDetail = "edit-automation-trigger-detail" in values ? values["edit-automation-trigger-detail"].selected_conversation : automation.editingState.trigger.detail;
+						const triggerSpecific = "edit-automation-trigger-specific" in values ? values["edit-automation-trigger-specific"].value : automation.editingState.trigger.specific;
+						const stepType = "edit-automation-step" in values ? values["edit-automation-step"].selected_option?.value : automation.editingState.steps[0].type;
+						const stepDetail = "edit-automation-step-detail" in values ? values["edit-automation-step-detail"].selected_conversation : automation.editingState.steps[0].detail;
+						const stepSpecific = "edit-automation-step-specific" in values ? values["edit-automation-step-specific"].value : automation.editingState.steps[0].specific;
+						automation.activeState = {
+							trigger: {
+								type: triggerType,
+								detail: triggerDetail || undefined,
+								specific: triggerSpecific || undefined
+							},
+							steps: [
+								{
+									type: stepType,
+									detail: stepDetail || undefined,
+									specific: stepSpecific || undefined
+								}
+							]
+						};
 					}
 					default:
 						break;
