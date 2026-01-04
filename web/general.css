@@ -1,0 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=Lato&display=swap');
+
+* {
+	color: #d1d2d3;
+	font-family: "Lato";
+	line-height: 1.15em;
+}
+
+body {
+	background-color: #202;
+	margin: 0;
+	padding: 20px;
+}
+
+p {
+	font-size: 1.15em;
+}
+
+button, a.button-a {
+	background-color: transparent;
+	border: 1px solid #494c51;
+	border-radius: 10px;
+	font-weight: bold;
+	font-size: 18px;
+	padding: 8px;
+	min-width: 125px;
+	text-decoration: none;
+}

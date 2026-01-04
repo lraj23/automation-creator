@@ -1,4 +1,5 @@
 import http from "http";
+import fs from "fs";
 import CONSTS from "./consts.js";
 import app from "./client.js";
 import { getAutomationCreator, saveState } from "./file.js";
@@ -7,6 +8,21 @@ const deployURLString = process.env.AUTOMATION_CREATOR_DEPLOY_URL;
 const deployURL = new URL(deployURLString);
 
 const server = http.createServer(async (req, res) => {
+	if (["/", "/general.css", "/index.js", "/create.html", "/create.js"].includes(req.url)) {
+		return fs.readFile("./web/" + (req.url.slice(1) || "index.html"), (err, data) => {
+			if (err) {
+				console.error(err);
+				res.writeHead(404, {
+					"Content-Type": "text/plain"
+				});
+				return res.end("404 Not Found");
+			}
+			res.writeHead(200, {
+				"Content-Type": "text/" + (req.url.slice(1) || "index.html").split(".").slice(-1)[0]
+			});
+			res.end(data);
+		});
+	}
 	if (!req.url.startsWith(deployURL.pathname)) {
 		res.writeHead(404, {
 			"Content-Type": "text/plain"
@@ -315,3 +331,5 @@ const server = http.createServer(async (req, res) => {
 server.listen(5030, () => {
 	console.log("Server running at " + deployURLString);
 });
+
+export default server;
