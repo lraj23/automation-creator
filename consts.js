@@ -50,4 +50,17 @@ CONSTS.AUTOMATION_CREATOR_TRIGGERS = {
 	}
 };
 
+CONSTS.AUTOMATION_CREATOR_STEPS = {
+	sendMessage: {
+		text: "Send a Message",
+		hasDetail: true,
+		hasSpecific: true
+	},
+	addReaction: {
+		text: "Add a Reaction",
+		hasDetail: true,
+		hasSpecific: true
+	}
+}
+
 export default CONSTS;

@@ -82,6 +82,13 @@ const server = http.createServer(async (req, res) => {
 				const automationCreator = getAutomationCreator();
 				const automation = automationCreator.automations.find(automation => automation.app_id === body.api_app_id);
 				if (!automation) return fail400("There was an error. This automation does not seem to exist.");
+				if (!automation.currentState) automation.currentState = {
+					trigger: {
+						type: null
+					},
+					steps: []
+				};
+				saveState(automationCreator);
 				switch (body.event.type) {
 					case "app_home_opened":
 						await publishView(automation.tokens.access_token, body.event.user, blocks[body.event.user === automation.tokens.authed_user.id ? "appHomePage" : "appHomePageOther"](automation));
@@ -108,13 +115,10 @@ const server = http.createServer(async (req, res) => {
 						const trigger = "edit-automation-trigger" in values ? values["edit-automation-trigger"].selected_option?.value : automation.currentState.trigger.type;
 						automation.currentState = {
 							trigger: {
-								type: trigger || null,
-								detail: undefined
+								type: trigger || null
 							},
 							steps: []
 						};
-						saveState(automationCreator);
-						await publishView(automation.tokens.access_token, automation.tokens.authed_user.id, blocks.appHomePage(automation));
 						break;
 					}
 					case "edit-automation-trigger-detail": {
@@ -123,21 +127,46 @@ const server = http.createServer(async (req, res) => {
 						try {
 							channel = (await app.client.conversations.info({ token: automation.tokens.access_token, channel: detail })).channel.id;
 						} catch (e) {
-							automation.currentState.trigger.detail = channel = "Unavailable";
-							saveState(automationCreator);
-							await publishView(automation.tokens.access_token, automation.tokens.authed_user.id, blocks.appHomePage(automation));
+							channel = "Unavailable";
 						}
-						if (channel !== "Unavailable") automation.currentState.trigger.detail = channel;
-						saveState(automationCreator);
-						await publishView(automation.tokens.access_token, automation.tokens.authed_user.id, blocks.appHomePage(automation));
+						automation.currentState = {
+							trigger: {
+								type: automation.currentState.trigger.type,
+								detail: channel
+							},
+							steps: []
+						};
 						break;
 					}
-					case "edit-automation-trigger-specific":
+					case "edit-automation-trigger-specific": {
 						const specific = "edit-automation-trigger-specific" in values ? values["edit-automation-trigger-specific"].value : automation.currentState.trigger.specific;
+						automation.currentState = {
+							trigger: {
+								type: automation.currentState.trigger.type,
+								detail: automation.currentState.trigger.detail,
+								specific
+							},
+							steps: []
+						};
 						break;
+					}
+					case "edit-automation-step": {
+						const step = "edit-automation-step" in values ? values["edit-automation-step"].selected_option?.value : automation.currentState.steps[0].type;
+						automation.currentState = {
+							trigger: automation.currentState.trigger,
+							steps: [
+								{
+									type: step || null
+								}
+							]
+						};
+						break;
+					}
 					default:
 						break;
 				}
+				saveState(automationCreator);
+				await publishView(automation.tokens.access_token, automation.tokens.authed_user.id, blocks.appHomePage(automation));
 				res.writeHead(200, {
 					"Content-Type": "text/plain"
 				});

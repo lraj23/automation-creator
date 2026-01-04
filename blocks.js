@@ -267,7 +267,7 @@ blocks.appHomePage = automation => [
 				} : undefined,
 				action_id: "edit-automation-trigger",
 			},
-			...(CONSTS.AUTOMATION_CREATOR_TRIGGERS[automation.currentState.trigger.type].hasDetail ? [{
+			...(automation.currentState.trigger.type ? CONSTS.AUTOMATION_CREATOR_TRIGGERS[automation.currentState.trigger.type].hasDetail ? [{
 				joinedChannel: {
 					type: "conversations_select",
 					placeholder: {
@@ -288,17 +288,18 @@ blocks.appHomePage = automation => [
 					initial_conversation: blocks.isValidDetail(automation.currentState.trigger.detail) ? automation.currentState.trigger.detail : undefined,
 					action_id: "edit-automation-trigger-detail"
 				}
-			}[automation.currentState.trigger.type]] : [])
+			}[automation.currentState.trigger.type]] : [] : [])
 		]
 	},
-	...blocks.appHomePageTriggerDetail(automation.currentState),
+	...blocks.appHomePageTriggerDetailWarning(automation.currentState),
 	{
 		type: "divider"
 	},
-	...blocks.appHomePageTriggerSpecific(automation.currentState)
+	...blocks.appHomePageTriggerSpecific(automation.currentState),
+	...blocks.appHomePageSteps(automation.currentState)
 ];
 
-blocks.appHomePageTriggerDetail = currentState => {
+blocks.appHomePageTriggerDetailWarning = currentState => {
 	if (!currentState.trigger.detail) return [];
 	if (currentState.trigger.detail === "Unavailable") return [{
 		type: "context",
@@ -313,7 +314,7 @@ blocks.appHomePageTriggerDetail = currentState => {
 };
 
 blocks.appHomePageTriggerSpecific = currentState => {
-	if (!isValidDetail(currentState.trigger.detail)) return [];
+	if (!blocks.isValidDetail(currentState.trigger.detail)) return [];
 	return CONSTS.AUTOMATION_CREATOR_TRIGGERS[currentState.trigger.type].hasSpecific ? [{
 		addedReaction: {
 			type: "input",
@@ -324,7 +325,7 @@ blocks.appHomePageTriggerSpecific = currentState => {
 					text: "No colons",
 					emoji: true
 				},
-				initial_value: currentState.trigger.specific,
+				initial_value: currentState.trigger.specific || undefined,
 				action_id: "edit-automation-trigger-specific"
 			},
 			label: {
@@ -335,8 +336,63 @@ blocks.appHomePageTriggerSpecific = currentState => {
 			optional: false,
 			dispatch_action: true
 		}
-	}[currentState.trigger.type]] : [];
-}
+	}[currentState.trigger.type], { type: "divider" }] : [];
+};
+
+blocks.appHomePageSteps = currentState => {
+	if (!currentState.trigger.type) return [];
+	if (CONSTS.AUTOMATION_CREATOR_TRIGGERS[currentState.trigger.type].hasDetail && !blocks.isValidDetail(currentState.trigger.detail)) return [];
+	if (CONSTS.AUTOMATION_CREATOR_TRIGGERS[currentState.trigger.type].hasSpecific && !currentState.trigger.specific) return [];
+	else return [
+		{
+			type: "header",
+			text: {
+				type: "plain_text",
+				text: "Step"
+			}
+		},
+		{
+			type: "section",
+			text: {
+				type: "mrkdwn",
+				text: "Set the step for your automation! This is what happens when your automation is triggered."
+			}
+		},
+		{
+			type: "actions",
+			elements: [
+				{
+					type: "static_select",
+					placeholder: {
+						type: "plain_text",
+						text: "Choose an action",
+						emoji: true
+					},
+					options: Object.entries(CONSTS.AUTOMATION_CREATOR_STEPS).map(step => ({
+						text: {
+							type: "plain_text",
+							text: step[1].text,
+							emoji: true
+						},
+						value: step[0]
+					})),
+					initial_option: currentState.steps[0] ? {
+						text: {
+							type: "plain_text",
+							text: CONSTS.AUTOMATION_CREATOR_STEPS[currentState.steps[0].type].text,
+							emoji: true
+						},
+						value: currentState.steps[0].type
+					} : undefined,
+					action_id: "edit-automation-step"
+				}
+			]
+		},
+		{
+			type: "divider"
+		}
+	];
+};
 
 blocks.isValidDetail = detail => detail === "Unavailable" ? false : detail;
 
@@ -345,7 +401,7 @@ blocks.appHomePageOther = automation => [
 		type: "section",
 		text: {
 			type: "mrkdwn",
-			text: automation.displayInformation.automationName + " was created by <@" + automation.tokens.authed_user.id + "> using Automation Creator. Its trigger is \"" + CONSTS.AUTOMATION_CREATOR_TRIGGERS[automation.currentState.trigger.type].text + ".\" Contact them to learn more!"
+			text: automation.displayInformation.automationName + " was created by <@" + automation.tokens.authed_user.id + "> using Automation Creator. Its trigger is \"" + CONSTS.AUTOMATION_CREATOR_TRIGGERS[automation.currentState.trigger.type].text + ",\" and it takes the action \"" + (CONSTS.AUTOMATION_CREATOR_STEPS[automation.currentState.steps[0]?.type]?.text || "None") + ".\" Contact them to learn more!"
 		}
 	}
 ];
