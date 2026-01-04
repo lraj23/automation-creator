@@ -20,6 +20,21 @@ const server = http.createServer(async (req, res) => {
 		res.end(msg);
 	};
 	const publishView = async (token, user_id, blocks) => await app.client.views.publish({ token, user_id, view: { type: "home", blocks } });
+	const runWorkflowStep = async (step, token) => {
+		switch (step.type) {
+			case "sendMessage":
+				try {
+					await app.client.chat.postMessage({
+						token,
+						channel: step.detail,
+						text: step.specific
+					});
+				} catch (e) {
+					console.error(e.data.error);
+				}
+				break;
+		}
+	};
 
 	switch (fullURL.pathname.slice(deployURL.pathname.length)) {
 		case "/installed": {
@@ -271,6 +286,11 @@ const server = http.createServer(async (req, res) => {
 								}
 							]
 						};
+						break;
+					}
+					case "run-automation-manual": {
+						runWorkflowStep(automation.activeState.steps[0], automation.tokens.access_token);
+						break;
 					}
 					default:
 						break;

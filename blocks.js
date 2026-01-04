@@ -24,7 +24,7 @@ blocks.createAutomationStep1 = ({ automationName, automationShortDescription, au
 		type: "section",
 		text: {
 			type: "mrkdwn",
-			text: "First, define the basics of your automation. You'll be able to change this later!"
+			text: "First, define the basics of your automation. Keep in mind that you won't be able to change this later."
 		}
 	},
 	{
@@ -200,7 +200,7 @@ blocks.createAutomationStep2 = ({ automationRefreshToken }) => [
 		elements: [
 			{
 				type: "plain_text",
-				text: "Your tokens will be used to create and edit your automations, and will remain in the database thereafter. If you want the tokens to be removed, you can do that at any time through /manage-config-tokens."
+				text: "Your tokens will be used to create and edit your automations, and will not be stored thereafter."
 			},
 			{
 				type: "mrkdwn",
@@ -224,6 +224,10 @@ blocks.appHomePage = automation => [
 			type: "mrkdwn",
 			text: "From here you can view and edit your automation!"
 		}
+	},
+	...blocks.appHomePageManualButton(automation.activeState),
+	{
+		type: "divider"
 	},
 	{
 		type: "header",
@@ -301,6 +305,26 @@ blocks.appHomePage = automation => [
 	...blocks.appHomePageStepsSpecific(automation.editingState),
 	...blocks.appHomePageUpdateButton(automation.editingState)
 ];
+
+blocks.appHomePageManualButton = activeState => {
+	if (!activeState) return [];
+	if (activeState.trigger.type !== "manual") return [];
+	return [{
+		type: "actions",
+		elements: [
+			{
+				type: "button",
+				text: {
+					type: "plain_text",
+					text: "Run automation",
+					emoji: true
+				},
+				value: "run-automation-manual",
+				action_id: "run-automation-manual"
+			}
+		]
+	}];
+};
 
 blocks.appHomePageTriggerDetailWarning = editingState => {
 	if (!editingState.trigger.detail) return [];

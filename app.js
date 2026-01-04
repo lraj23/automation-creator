@@ -86,12 +86,11 @@ app.action("create-automation", async ({ ack, body: { user: { id: user }, channe
 	let refreshToken = "ignore-automation-configuration-refresh-token" in values ? values["ignore-automation-configuration-refresh-token"].value : automationCreator.inProgressAutomations[user].automationRefreshToken;
 
 	saveState(automationCreator);
+	let token;
 	try {
-		const newToken = await app.client.tooling.tokens.rotate({
+		token = await app.client.tooling.tokens.rotate({
 			refresh_token: refreshToken
 		});
-		automationCreator.configurationTokens[user] = newToken;
-		saveState(automationCreator);
 	} catch (e) {
 		console.error(e.data.error);
 		return await warn(channel, user, "There was an error with your refresh token. Make sure it is active, recent, and begins with \"xoxe-\"");
@@ -99,7 +98,7 @@ app.action("create-automation", async ({ ack, body: { user: { id: user }, channe
 
 	try {
 		const automation = await app.client.apps.manifest.create({
-			token: automationCreator.configurationTokens[user].token,
+			token,
 			manifest: JSON.stringify({
 				display_information: {
 					name: automationCreator.inProgressAutomations[user].automationName,
