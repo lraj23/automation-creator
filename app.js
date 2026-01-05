@@ -1,9 +1,9 @@
 import CONSTS from "./consts.js";
-import app from "./client.js";
+import { app, apps } from "./client.js";
 import "./server.js";
 import { getAutomationCreator, saveState } from "./file.js";
 import blocks from "./blocks.js";
-const warn = async (channel, user, text) => await app.client.chat.postEphemeral({
+const warn = async (workspaceId, channel, user, text) => await apps.getApp(workspaceId).client.chat.postEphemeral({
 	channel,
 	user,
 	blocks: blocks.warn(text),
@@ -40,8 +40,9 @@ app.action("create-automation-step1", async ({ ack, body: { user: { id: user }, 
 	});
 });
 
-app.action("create-automation-step2", async ({ ack, body: { user: { id: user }, channel: { id: channel }, state: { values } }, respond }) => {
+app.action("create-automation-step2", async ({ ack, body: { user: { id: user }, channel: { id: channel }, state: { values }, team, enterprise: { id: enterprise } }, respond }) => {
 	await ack();
+	const teamId = team?.id;
 	const automationCreator = getAutomationCreator();
 	values = CONSTS.GET_READABLE_VALUES(values);
 	const name = "ignore-automation-name" in values ? values["ignore-automation-name"].value : automationCreator.inProgressAutomations[user].automationName;
@@ -50,17 +51,17 @@ app.action("create-automation-step2", async ({ ack, body: { user: { id: user }, 
 	const color = "ignore-automation-color" in values ? values["ignore-automation-color"].value : automationCreator.inProgressAutomations[user].automationColor;
 
 	if (!automationCreator.inProgressAutomations[user]) return await respond("Something went wrong. Try running /create-automation again!");
-	if (!name) return await warn(channel, user, "Enter an automation name!");
-	if (name.length > 35) return await warn(channel, user, "Make sure the name is under 35 characters long!");
-	if (!shortDesc) return await warn(channel, user, "Enter a short description!");
-	if (shortDesc.length > 140) return await warn(channel, user, "Make sure the short description is under 140 characters long!");
-	if (!longDesc) return await warn(channel, user, "Enter a long description!");
-	if (longDesc.length < 175) return await warn(channel, user, "Make sure the long description is at least 175 characters long!");
-	if (longDesc.length > 4000) return await warn(channel, user, "Make sure the long description is less than 4000 characters long!");
+	if (!name) return await warn(teamId || enterprise, channel, user, "Enter an automation name!");
+	if (name.length > 35) return await warn(teamId || enterprise, channel, user, "Make sure the name is under 35 characters long!");
+	if (!shortDesc) return await warn(teamId || enterprise, channel, user, "Enter a short description!");
+	if (shortDesc.length > 140) return await warn(teamId || enterprise, channel, user, "Make sure the short description is under 140 characters long!");
+	if (!longDesc) return await warn(teamId || enterprise, channel, user, "Enter a long description!");
+	if (longDesc.length < 175) return await warn(teamId || enterprise, channel, user, "Make sure the long description is at least 175 characters long!");
+	if (longDesc.length > 4000) return await warn(teamId || enterprise, channel, user, "Make sure the long description is less than 4000 characters long!");
 	if (color) {
-		if (!parseInt(color, 16)) return await warn(channel, user, "Really? That's not a color.");
-		if (parseInt(color, 16) < 0) return await warn(channel, user, "Really? That's not a color.");
-		if (parseInt(color, 16) > 16777215) return await warn(channel, user, "Really? That's not a color.");
+		if (!parseInt(color, 16)) return await warn(teamId || enterprise, channel, user, "Really? That's not a color.");
+		if (parseInt(color, 16) < 0) return await warn(teamId || enterprise, channel, user, "Really? That's not a color.");
+		if (parseInt(color, 16) > 16777215) return await warn(teamId || enterprise, channel, user, "Really? That's not a color.");
 	}
 
 	automationCreator.inProgressAutomations[user] = {
@@ -78,8 +79,9 @@ app.action("create-automation-step2", async ({ ack, body: { user: { id: user }, 
 	});
 });
 
-app.action("create-automation", async ({ ack, body: { user: { id: user }, channel: { id: channel }, state: { values } }, respond }) => {
+app.action("create-automation", async ({ ack, body: { user: { id: user }, channel: { id: channel }, state: { values }, team, enterprise: { id: enterprise } }, respond }) => {
 	await ack();
+	const teamId = team?.id;
 	const automationCreator = getAutomationCreator();
 	if (!automationCreator.inProgressAutomations[user]) return await respond("Something went wrong. Try running /create-automation again!");
 	values = CONSTS.GET_READABLE_VALUES(values);
@@ -88,16 +90,16 @@ app.action("create-automation", async ({ ack, body: { user: { id: user }, channe
 	saveState(automationCreator);
 	let token;
 	try {
-		token = await app.client.tooling.tokens.rotate({
+		token = (await apps.getApp(teamId || enterprise).client.tooling.tokens.rotate({
 			refresh_token: refreshToken
-		});
+		})).token;
 	} catch (e) {
 		console.error(e.data.error);
-		return await warn(channel, user, "There was an error with your refresh token. Make sure it is active, recent, and begins with \"xoxe-\"");
+		return await warn(teamId || enterprise, channel, user, "There was an error with your refresh token. Make sure it is active, recent, and begins with \"xoxe-\"");
 	}
 
 	try {
-		const automation = await app.client.apps.manifest.create({
+		const automation = await apps.getApp(teamId || enterprise).client.apps.manifest.create({
 			token,
 			manifest: JSON.stringify({
 				display_information: {
@@ -154,11 +156,11 @@ app.action("create-automation", async ({ ack, body: { user: { id: user }, channe
 		authorizeURL.searchParams.set("state", automation.app_id);
 
 		automationCreator.automations.push(automation);
-		await app.client.chat.postEphemeral({ channel, user, text: "Next step: Install your app onto the workspace with this link: <" + authorizeURL + "|Install Your Automation>" });
+		await respond("Next step: Install your app onto the workspace with this link: <" + authorizeURL + "|Install Your Automation>");
 		saveState(automationCreator);
 	} catch (e) {
 		console.error(e);
-		return await warn(channel, user, "There was an error creating your automation... Make sure all your inputs are valid and try again!");
+		return await warn(teamId || enterprise, channel, user, "There was an error creating your automation... Make sure all your inputs are valid and try again!");
 	}
 });
 

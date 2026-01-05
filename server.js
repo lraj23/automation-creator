@@ -1,7 +1,7 @@
 import http from "http";
 import fs from "fs";
 import CONSTS from "./consts.js";
-import app from "./client.js";
+import { app } from "./client.js";
 import { getAutomationCreator, saveState } from "./file.js";
 import blocks from "./blocks.js";
 const deployURLString = process.env.AUTOMATION_CREATOR_DEPLOY_URL;
@@ -53,6 +53,47 @@ const server = http.createServer(async (req, res) => {
 	};
 
 	switch (fullURL.pathname.slice(deployURL.pathname.length)) {
+		case "/automation-creator-bot": {
+			const code = fullURL.searchParams.get("code");
+			const automationCreator = getAutomationCreator();
+			if (!code || (fullURL.searchParams.get("state") !== process.env.AUTOMATION_CREATOR_APP_ID)) {
+				if (fullURL.searchParams.get("error") === "access_denied") return fail400("Please allow the OAuth for Automation Creator to join your workspace.");
+				return fail400("Something's wrong with this request. Try opening the link you got on Slack and authorizing from there. If this persists, contact lraj23 at the Automation Creator GitHub repository at https://www.github.com/lraj23/automation-creator.");
+			}
+			let tokens = { ok: false };
+			try {
+				tokens = await app.client.oauth.v2.access({
+					code,
+					client_id: process.env.AUTOMATION_CREATOR_CLIENT_ID,
+					client_secret: process.env.AUTOMATION_CREATOR_CLIENT_SECRET
+				});
+			} catch (e) {
+				console.error(e.data.error);
+				return fail400("There was an error (" + e.data.error + "). Try opening the installation link again. If this keeps happening, contact lraj23 at the Automation Creator GitHub repository at https://www.github.com/lraj23/automation-creator.");
+			}
+			let scopeIsSame = true;
+			if (tokens.scope.split(",").length !== CONSTS.AUTOMATION_CREATOR_BOT_SCOPES.length) scopeIsSame = false;
+			else for (let i = 0; i < tokens.scope.length; i++)
+				if (tokens.scope.split(",").sort()[i] !== CONSTS.AUTOMATION_CREATOR_BOT_SCOPES.sort()[i]) scopeIsSame = false;
+			if (!scopeIsSame) return fail400("Wrong scopes. Go back and try authorizing again.");
+			let dmID;
+			try {
+				dmID = await app.client.conversations.open({
+					token: tokens.access_token,
+					users: tokens.authed_user.id
+				});
+			} catch (e) {
+				console.error(e.data.error);
+				dmID = { channel: { id: "UNDEFINED" } };
+			}
+			res.writeHead(200, {
+				"Content-Type": "text/plain"
+			});
+			res.end("Success!");
+			automationCreator.authedWorkspaces.push(tokens);
+			saveState(automationCreator);
+			break;
+		}
 		case "/installed": {
 			const code = fullURL.searchParams.get("code");
 			const automationCreator = getAutomationCreator();

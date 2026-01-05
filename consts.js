@@ -30,6 +30,22 @@ CONSTS.AUTOMATION_CREATOR_SCOPES = [
 	"users:write"
 ];
 
+CONSTS.AUTOMATION_CREATOR_BOT_SCOPES = [
+	"channels:history",
+	"channels:read",
+	"chat:write",
+	"chat:write.customize",
+	"chat:write.public",
+	"groups:history",
+	"groups:read",
+	"im:history",
+	"im:read",
+	"mpim:history",
+	"mpim:read",
+	"users:read",
+	"commands"
+];
+
 CONSTS.GET_READABLE_VALUES = values => Object.fromEntries(Object.values(values).map(block => Object.entries(block)).flat());
 
 CONSTS.AUTOMATION_CREATOR_TRIGGERS = {
