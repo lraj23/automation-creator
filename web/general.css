@@ -16,13 +16,30 @@ p {
 	font-size: 1.15em;
 }
 
-button, a.button-a {
+button,
+a.button-a {
 	background-color: transparent;
 	border: 1px solid #494c51;
-	border-radius: 10px;
+	border-radius: 7px;
 	font-weight: bold;
-	font-size: 18px;
+	font-size: 20px;
 	padding: 8px;
 	min-width: 125px;
 	text-decoration: none;
+	display: inline-block;
+	margin: 4px;
+	vertical-align: bottom;
+}
+
+#add-to-slack {
+	padding: 0;
+}
+
+#add-to-slack img {
+	vertical-align: bottom;
+}
+
+.context {
+	color: #8b8b8d;
+	font-size: 1em;
 }

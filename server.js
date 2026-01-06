@@ -4,12 +4,13 @@ import CONSTS from "./consts.js";
 import { app } from "./client.js";
 import { getAutomationCreator, saveState } from "./file.js";
 import blocks from "./blocks.js";
-const deployURLString = process.env.AUTOMATION_CREATOR_DEPLOY_URL;
-const deployURL = new URL(deployURLString);
+const apiURLString = process.env.AUTOMATION_CREATOR_API_URL;
+const apiURL = new URL(apiURLString);
+const websiteURLString = process.env.AUTOMATION_CREATOR_WEBSITE_URL;
 
 const server = http.createServer(async (req, res) => {
-	if (["/", "/general.css", "/index.js", "/create.html", "/create.js"].includes(req.url)) {
-		return fs.readFile("./web/" + (req.url.slice(1) || "index.html"), (err, data) => {
+	if (Object.keys(CONSTS.WEB_PATHS).includes(req.url)) {
+		return fs.readFile("./web/" + CONSTS.WEB_PATHS[req.url][0], (err, data) => {
 			if (err) {
 				console.error(err);
 				res.writeHead(404, {
@@ -18,19 +19,19 @@ const server = http.createServer(async (req, res) => {
 				return res.end("404 Not Found");
 			}
 			res.writeHead(200, {
-				"Content-Type": "text/" + (req.url.slice(1) || "index.html").split(".").slice(-1)[0]
+				"Content-Type": CONSTS.WEB_PATHS[req.url][1]
 			});
 			res.end(data);
 		});
 	}
-	if (!req.url.startsWith(deployURL.pathname)) {
+	if (!req.url.startsWith(apiURL.pathname)) {
 		res.writeHead(404, {
 			"Content-Type": "text/plain"
 		});
 		return res.end("404 Not Found");
 	}
-	const url = req.url.slice(deployURL.pathname.length);
-	const fullURL = new URL(deployURLString + url);
+	const url = req.url.slice(apiURL.pathname.length);
+	const fullURL = new URL(apiURLString + url);
 	const fail400 = msg => {
 		res.writeHead(400, { "Content-Type": "text/plain" });
 		res.end(msg);
@@ -52,7 +53,7 @@ const server = http.createServer(async (req, res) => {
 		}
 	};
 
-	switch (fullURL.pathname.slice(deployURL.pathname.length)) {
+	switch (fullURL.pathname.slice(apiURL.pathname.length)) {
 		case "/automation-creator-bot": {
 			const code = fullURL.searchParams.get("code");
 			const automationCreator = getAutomationCreator();
@@ -76,20 +77,10 @@ const server = http.createServer(async (req, res) => {
 			else for (let i = 0; i < tokens.scope.length; i++)
 				if (tokens.scope.split(",").sort()[i] !== CONSTS.AUTOMATION_CREATOR_BOT_SCOPES.sort()[i]) scopeIsSame = false;
 			if (!scopeIsSame) return fail400("Wrong scopes. Go back and try authorizing again.");
-			let dmID;
-			try {
-				dmID = await app.client.conversations.open({
-					token: tokens.access_token,
-					users: tokens.authed_user.id
-				});
-			} catch (e) {
-				console.error(e.data.error);
-				dmID = { channel: { id: "UNDEFINED" } };
-			}
-			res.writeHead(200, {
-				"Content-Type": "text/plain"
+			res.writeHead(301, {
+				Location: websiteURLString + "/create"
 			});
-			res.end("Success!");
+			res.end();
 			automationCreator.authedWorkspaces.push(tokens);
 			saveState(automationCreator);
 			break;
@@ -370,7 +361,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(5030, () => {
-	console.log("Server running at " + deployURLString);
+	console.log("Server running at " + websiteURLString);
 });
 
 export default server;

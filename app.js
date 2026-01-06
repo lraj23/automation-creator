@@ -9,7 +9,7 @@ const warn = async (workspaceId, channel, user, text) => await apps.getApp(works
 	blocks: blocks.warn(text),
 	text
 });
-const deployURL = process.env.AUTOMATION_CREATOR_DEPLOY_URL;
+const apiURL = process.env.AUTOMATION_CREATOR_API_URL;
 
 app.command("/create-automation", async ({ ack, body: { user_id }, respond }) => {
 	await ack();
@@ -114,11 +114,11 @@ app.action("create-automation", async ({ ack, body: { user: { id: user }, channe
 					socket_mode_enabled: false,
 					interactivity: {
 						is_enabled: true,
-						request_url: deployURL + "/interactivity",
-						message_menu_options_url: deployURL + "/interactivity"
+						request_url: apiURL + "/interactivity",
+						message_menu_options_url: apiURL + "/interactivity"
 					},
 					event_subscriptions: {
-						request_url: deployURL + "/event-subscriptions",
+						request_url: apiURL + "/event-subscriptions",
 						bot_events: [
 							"app_home_opened",
 							"message.im",
@@ -143,7 +143,7 @@ app.action("create-automation", async ({ ack, body: { user: { id: user }, channe
 				},
 				oauth_config: {
 					redirect_urls: [
-						deployURL + "/installed"
+						apiURL + "/installed"
 					],
 					scopes: {
 						bot: CONSTS.AUTOMATION_CREATOR_SCOPES
