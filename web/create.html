@@ -7,8 +7,13 @@
 		<title>Automation Creator</title>
 	</head>
 	<body>
-		<script src="/socket.io/socket.io.js"></script>
-		<script src="./create.js"></script>
 		<h1><a href="./">Automation Creator</a> / Create an Automation</h1>
+		<p>Once Automation Creator has been added to your workspace, create an automation now from this page. <span class="context">(If you or someone else from your workspace still haven't added Automation Creator to your workspace, <a href="https://slack.com/oauth/v2/authorize?client_id=2210535565.10193337164310&scope=channels:history,channels:read,chat:write,chat:write.customize,chat:write.public,groups:history,groups:read,im:history,im:read,mpim:history,mpim:read,users:read,commands&user_scope=&state=A0A5P9X4U94">add it to Slack now</a>. Ensure to use your workspace and not your organization.)</span> Alternatively, you can go to your workspace and run the /create-automation command in any channel.</p>
+		<p>Choose one of the workspaces below in which to add an automation.</p>
+		<select id="selectWorkspace">
+			<option selected hidden disabled>Choose a Workspace</option>
+		</select>
+		<script src="/socket.io/socket.io.js" defer></script>
+		<script src="./create.js" defer></script>
 	</body>
 </html>

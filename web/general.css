@@ -13,11 +13,12 @@ body {
 }
 
 p {
-	font-size: 1.15em;
+	font-size: 20px;
 }
 
 button,
-a.button-a {
+a.button-a,
+select {
 	background-color: transparent;
 	border: 1px solid #494c51;
 	border-radius: 7px;
@@ -31,6 +32,11 @@ a.button-a {
 	vertical-align: bottom;
 }
 
+select {
+	width: 225px;
+	font-weight: normal;
+}
+
 #add-to-slack {
 	padding: 0;
 }
@@ -39,7 +45,14 @@ a.button-a {
 	vertical-align: bottom;
 }
 
-.context {
+span.context {
 	color: #8b8b8d;
-	font-size: 1em;
+	font-size: 16px;
+	display: block;
+}
+
+option {
+	min-width: 300px;
+	background-color: #2a072a;
+	padding: 8px;
 }

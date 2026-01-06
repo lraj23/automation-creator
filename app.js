@@ -1,6 +1,7 @@
 import CONSTS from "./consts.js";
 import { app, apps } from "./client.js";
 import "./server.js";
+import "./io.js";
 import { getAutomationCreator, saveState } from "./file.js";
 import blocks from "./blocks.js";
 const warn = async (workspaceId, channel, user, text) => await apps.getApp(workspaceId).client.chat.postEphemeral({
