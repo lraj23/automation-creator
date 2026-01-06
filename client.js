@@ -10,7 +10,7 @@ apps.getApp = id => {
 	if (id === devWorkspaceId) return app;
 	if (apps[id]) return apps[id];
 	apps[id] = new bolt.App({
-		token: getAutomationCreator().authedWorkspaces.find(workspace => (id === workspace.team?.id || id === workspace.enterprise.id)).access_token,
+		token: getAutomationCreator().authedWorkspaces.find(workspace => (id === workspace.team?.id || id === workspace.enterprise?.id)).access_token,
 		signingSecret,
 		socketMode,
 		appToken

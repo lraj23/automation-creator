@@ -337,7 +337,15 @@ blocks.appHomePageTriggerDetailWarning = editingState => {
 			}
 		]
 	}];
-	return [];
+	return [{
+		type: "context",
+		elements: [
+			{
+				type: "mrkdwn",
+				text: "Just make sure that this automation is in <#" + editingState.trigger.detail + "> for it to function!"
+			}
+		]
+	}];
 };
 
 blocks.appHomePageTriggerSpecific = editingState => {
@@ -446,7 +454,17 @@ blocks.appHomePageSteps = editingState => {
 blocks.appHomePageStepsDetailWarning = editingState => {
 	if (!editingState.steps[0]) return [];
 	if (!editingState.steps[0].detail) return [];
-	if (editingState.steps[0].detail !== "Unavailable") return [];
+	if (editingState.steps[0].detail !== "Unavailable") return [
+		{
+			type: "context",
+			elements: [
+				{
+					type: "mrkdwn",
+					text: "Just make sure that this automation is in <#" + editingState.steps[0].detail + "> for it to function!"
+				}
+			]
+		}
+	];
 	return [
 		{
 			type: "context",
