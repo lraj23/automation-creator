@@ -1,9 +1,10 @@
 const socket = io();
 const selectWorkspace = document.getElementById("selectWorkspace");
-console.log(selectWorkspace);
+const refreshToken = document.getElementById("refreshToken");
+const createAutomationError = document.getElementById("createAutomationError");
+const createAutomation = document.getElementById("createAutomation");
 
 socket.emit("authedWorkspaces", response => {
-	console.log(response);
 	response.forEach(workspace => {
 		const option = document.createElement("option");
 		option.value = workspace.id;
@@ -12,6 +13,10 @@ socket.emit("authedWorkspaces", response => {
 	});
 });
 
-selectWorkspace.onchange = () => {
-	console.log(selectWorkspace.value);
-};
+createAutomation.onclick = () => {
+	if (selectWorkspace.value === "none") return createAutomationError.innerText = "Choose a workspace.";
+	socket.emit("testWorkspaceMatch", selectWorkspace.value, refreshToken.value, response => {
+		if (!response.ok) createAutomationError.innerText = response.error;
+		else createAutomationError.innerText = "";
+	});
+}

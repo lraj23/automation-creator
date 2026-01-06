@@ -1,10 +1,12 @@
 import { Server } from "socket.io";
 import server from "./server.js";
+import { app, apps } from "./client.js";
 import { getAutomationCreator } from "./file.js";
 const io = new Server(server);
 
 io.on("connection", socket => {
 	console.log("Socket connection established!");
+
 	socket.on("authedWorkspaces", callback => {
 		if (typeof callback !== "function") return;
 		let automationCreator = getAutomationCreator();
@@ -28,5 +30,25 @@ io.on("connection", socket => {
 			});
 		});
 		callback(authedWorkspaces);
+	});
+
+	socket.on("testWorkspaceMatch", async (workspace, refreshToken, callback) => {
+		let token;
+		try {
+			token = await apps.getApp(workspace).client.tooling.tokens.rotate({
+				refresh_token: refreshToken
+			});
+		} catch (e) {
+			console.error(e);
+			return callback({
+				ok: false,
+				error: "There was an error with your refresh token. Make sure it is active, recent, and begins with \"xoxe-\""
+			});
+		}
+		if (token.team_id !== workspace) return callback({
+			ok: false,
+			error: "This refresh token does not match the workspace provided above. Please make sure you select the right workspace."
+		});
+		callback({ ok: true });
 	});
 });

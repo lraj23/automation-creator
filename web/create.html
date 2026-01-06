@@ -9,10 +9,23 @@
 	<body>
 		<h1><a href="./">Automation Creator</a> / Create an Automation</h1>
 		<p>Once Automation Creator has been added to your workspace, create an automation now from this page. <span class="context">(If you or someone else from your workspace still haven't added Automation Creator to your workspace, <a href="https://slack.com/oauth/v2/authorize?client_id=2210535565.10193337164310&scope=channels:history,channels:read,chat:write,chat:write.customize,chat:write.public,groups:history,groups:read,im:history,im:read,mpim:history,mpim:read,users:read,commands&user_scope=&state=A0A5P9X4U94">add it to Slack now</a>. Ensure to use your workspace and not your organization.)</span> Alternatively, you can go to your workspace and run the /create-automation command in any channel.</p>
+		<hr>
 		<p>Choose one of the workspaces below in which to add an automation.</p>
 		<select id="selectWorkspace">
-			<option selected hidden disabled>Choose a Workspace</option>
+			<option selected hidden disabled value="none">Choose a Workspace</option>
 		</select>
+		<hr>
+		<label for="refreshToken" id="refreshTokenLabel">Enter your configuration refresh token for this workspace.</label>
+		<input id="refreshToken" placeholder="xoxe-TOKEN">
+		<br>
+		<span class="context">Enter your app configuration refresh token. Your actual configuration token is used to create and manage your automation, but it expires soon after being issued. The refresh token is used to renew the first token, and so it is all that is necessary to maintain the bot.</span>
+		<span class="context">To get this token, go to <a href="https://api.slack.com/apps">https://api.slack.com/apps</a>. At the bottom, in "Your App Configuration Tokens," click "Generate Token," or, if you already have a configuration token for the workspace, click the "Copy" button under "Refresh Token." Make sure to choose the workspace you have added Automation Creator to, in which you want to make your automation.</span>
+		<hr>
+		<button id="createAutomation">Create Automation</button>
+		<span id="createAutomationError"></span>
+		<br><br>
+		<span class="context">Your tokens will be used to create and edit your automations, as well as to verify your identity, and will not be stored thereafter. Everything is transparent and open source at <a href="https://www.github.com/lraj23/automation-creator">lraj23/automation-creator</a> if you want to check for yourself.</span>
+		<span class="context">Keep in mind that your automation and tokens are under your account, and that means you can always take control of them through the Slack page at <a href="https://api.slack.com/apps">https://api.slack.com/apps</a> if you have issues. <a href="https://www.github.com/lraj23">lraj23</a>, who created Automation Creator open source at <a href="https://www.github.com/lraj23/automation-creator">lraj23/automation-creator</a>, is not responsible for the actions taken by your automations.</span>
 		<script src="/socket.io/socket.io.js" defer></script>
 		<script src="./create.js" defer></script>
 	</body>

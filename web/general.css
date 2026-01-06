@@ -18,7 +18,8 @@ p {
 
 button,
 a.button-a,
-select {
+select,
+input {
 	background-color: transparent;
 	border: 1px solid #494c51;
 	border-radius: 7px;
@@ -34,6 +35,12 @@ select {
 
 select {
 	width: 225px;
+	font-weight: normal;
+}
+
+input {
+	display: block;
+	min-width: 300px;
 	font-weight: normal;
 }
 
@@ -55,4 +62,25 @@ option {
 	min-width: 300px;
 	background-color: #2a072a;
 	padding: 8px;
+}
+
+label {
+	display: block;
+	font-size: 20px;
+	font-weight: bold;
+	margin-block-start: 1em;
+	margin-block-end: 1em;
+}
+
+#refreshToken {
+	width: 500px;
+}
+
+#createAutomationError {
+	display: block;
+	color: #b1254d;
+}
+
+hr {
+	border: 1px solid #35373b;
 }
