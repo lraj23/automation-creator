@@ -52,6 +52,11 @@ input {
 	vertical-align: bottom;
 }
 
+#sign-in-with-slack {
+	min-width: 125px;
+	padding: 11px;
+}
+
 span.context {
 	color: #8b8b8d;
 	font-size: 16px;
@@ -83,4 +88,16 @@ label {
 
 hr {
 	border: 1px solid #35373b;
+}
+
+#notSignedIn,
+body.notSignedIn #notSignedIn,
+body.signedIn #signedIn {
+	display: block;
+}
+
+body.signedIn #notSignedIn,
+#signedIn,
+body.notSignedIn #signedIn {
+	display: none;
 }

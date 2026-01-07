@@ -9,7 +9,8 @@ const apiURL = new URL(apiURLString);
 const websiteURLString = process.env.AUTOMATION_CREATOR_WEBSITE_URL;
 
 const server = http.createServer(async (req, res) => {
-	if (Object.keys(CONSTS.WEB_PATHS).includes(req.url)) {
+	if (Object.keys(CONSTS.WEB_PATHS).includes(req.url.split("?")[0])) {
+		req.url = req.url.split("?")[0];
 		return fs.readFile("./web/" + CONSTS.WEB_PATHS[req.url][0], (err, data) => {
 			if (err) {
 				console.error(err);
@@ -83,6 +84,43 @@ const server = http.createServer(async (req, res) => {
 			res.end();
 			automationCreator.authedWorkspaces.push(tokens);
 			saveState(automationCreator);
+			break;
+		}
+		case "/automation-creator-bot/sign-in-with-slack": {
+			const code = fullURL.searchParams.get("code");
+			const automationCreator = getAutomationCreator();
+			if (!code || (fullURL.searchParams.get("state") !== process.env.AUTOMATION_CREATOR_APP_ID)) {
+				if (fullURL.searchParams.get("error") === "access_denied") return fail400("Please allow the OAuth for you to sign in with SLack.");
+				return fail400("Something's wrong with this request. Try opening the link from the website again and signing in from there. If this persists, contact lraj23 at the Automation Creator repository at https://www.github.com/lraj23/automation-creator");
+			}
+			let tokens = { ok: false };
+			try {
+				tokens = await app.client.openid.connect.token({
+					code,
+					client_id: process.env.AUTOMATION_CREATOR_CLIENT_ID,
+					client_secret: process.env.AUTOMATION_CREATOR_CLIENT_SECRET,
+					redirect_uri: apiURLString + "/automation-creator-bot/sign-in-with-slack"
+				});
+			} catch (e) {
+				console.error(e.data.error);
+				return fail400("There was an error (" + e.data.error + "). Try opening the sign in link again. If this keeps happening, contact lraj23 at the Automation Creator GitHub repository at https://www.github.com/lraj23/automation-creator.");
+			}
+			try {
+				tokens = {
+					...JSON.parse(atob(tokens.id_token.split(".")[1].split("-").join("+").split("_").join("/"))),
+					access_token: tokens.access_token
+				};
+			} catch (e) {
+				console.error(e);
+				return fail400("Something went wrong... Try opening the sign in link again. If this keeps happening, contact lraj23 at the Automation Creator GitHub repository at https://www.github.com/lraj23/automation-creator");
+			}
+			automationCreator.authedUsers.push(tokens);
+			saveState(automationCreator);
+
+			res.writeHead(301, {
+				Location: websiteURLString + "?token=" + tokens.at_hash
+			});
+			res.end();
 			break;
 		}
 		case "/installed": {

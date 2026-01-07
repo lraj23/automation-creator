@@ -1,38 +1,38 @@
 import { Server } from "socket.io";
 import server from "./server.js";
-import { app, apps } from "./client.js";
-import { getAutomationCreator } from "./file.js";
+import { apps } from "./client.js";
+import { getAutomationCreator, saveState } from "./file.js";
 const io = new Server(server);
 
 io.on("connection", socket => {
 	console.log("Socket connection established!");
 
-	socket.on("authedWorkspaces", callback => {
+	socket.on("authedWorkspace", (atHash, callback) => {
 		if (typeof callback !== "function") return;
-		let automationCreator = getAutomationCreator();
+		const automationCreator = getAutomationCreator();
 		automationCreator.authedWorkspaces.push({
 			team: {
 				id: process.env.AUTOMATION_CREATOR_DEVELOPMENT_WORKSPACE_ID,
 				name: process.env.AUTOMATION_CREATOR_DEVELOPMENT_WORKSPACE_NAME
 			}
 		});
-		let authedWorkspaces = [];
-		automationCreator.authedWorkspaces.forEach(workspace => {
-			if (!workspace.team?.id) return;
-			if (authedWorkspaces.find(ws => workspace.team.id === ws.id)) return;
-			if (authedWorkspaces.find(ws => workspace.team.name === ws.name)) return authedWorkspaces.push({
-				id: workspace.team.id,
-				name: workspace.team.name
-			});
-			authedWorkspaces.push({
-				id: workspace.team.id,
-				name: workspace.team.name
-			});
+		const condition = workspace => (workspace.team?.id && workspace.team?.id === automationCreator.authedUsers.find(user => user.at_hash === atHash)["https://slack.com/team_id"]);
+		const authedWorkspaces = automationCreator.authedWorkspaces.filter(workspace => condition(workspace));
+		if (authedWorkspaces.length > 1) automationCreator.authedWorkspaces = [
+			...automationCreator.authedWorkspaces.filter(workspace => !condition(workspace)),
+			automationCreator.authedWorkspaces.filter(workspace => condition(workspace)).slice(-1)[0]
+		];
+		const authedWorkspace = automationCreator.authedWorkspaces.find(workspace => condition(workspace)) || {};
+		callback({
+			id: authedWorkspace.team?.id,
+			name: authedWorkspace.team?.name
 		});
-		callback(authedWorkspaces);
+		automationCreator.authedWorkspaces = automationCreator.authedWorkspaces.filter(workspace => workspace.ok);
+		saveState(automationCreator);
 	});
 
 	socket.on("testWorkspaceMatch", async (workspace, refreshToken, callback) => {
+		if (typeof callback !== "function") return;
 		let token;
 		try {
 			token = await apps.getApp(workspace).client.tooling.tokens.rotate({
@@ -51,4 +51,18 @@ io.on("connection", socket => {
 		});
 		callback({ ok: true });
 	});
+
+	socket.on("atHash", (atHash, callback) => {
+		if (typeof callback !== "function") return;
+		const automationCreator = getAutomationCreator();
+		const authedUsers = automationCreator.authedUsers.filter(user => user.at_hash === atHash);
+		if (authedUsers.length > 1) automationCreator.authedUsers = [
+			...automationCreator.authedUsers.filter(user => user.at_hash !== atHash),
+			automationCreator.authedUsers.filter(user => user.at_hash === atHash).slice(-1)[0]
+		];
+		saveState(automationCreator);
+		callback(automationCreator.authedUsers.find(user => user.at_hash === atHash));
+	});
+
+	socket.on("appId", callback => callback(process.env.AUTOMATION_CREATOR_APP_ID));
 });

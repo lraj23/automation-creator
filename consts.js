@@ -92,6 +92,7 @@ CONSTS.AUTOMATION_CREATOR_STEPS = {
 CONSTS.WEB_PATHS = {
 	"/": ["index.html", "text/html"],
 	"/general.css": ["general.css", "text/css"],
+	"/general.js": ["general.js", "text/js"],
 	"/index.js": ["index.js", "text/js"],
 	"/create": ["create.html", "text/html"],
 	"/create.js": ["create.js", "text/js"]
