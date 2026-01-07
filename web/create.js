@@ -9,11 +9,11 @@ socket.emit("atHash", atHash, response => {
 
 socket.emit("authedWorkspace", atHash, response => {
 	if (response.name) {
-		const option = document.createElement("option");
-		option.value = response.id;
-		option.innerText = response.name;
-		selectWorkspace.appendChild(option);
-		socket.emit("appId", appId => document.getElementById("selectWorkspaceContext").innerHTML = "If this is the wrong workspace, <a href=\"https://slack.com/openid/connect/authorize?scope=openid profile&response_type=code&redirect_uri=https://unimpressed-unplastic-chelsey.ngrok-free.dev/automation-creator/automation-creator-bot/sign-in-with-slack&client_id=2210535565.10193337164310&state=" + appId + "\">sign in with Slack again</a> on the correct workspace.");
+		const selectWorkspaceLabel = document.getElementById("selectWorkspaceLabel");
+		const selectWorkspaceContext = document.getElementById("selectWorkspaceContext");
+		selectWorkspaceLabel.innerText = "Ensure you want to add your automation to this workspace:";
+		selectWorkspace.outerHTML = "<a class=\"button-a\">" + response.name + "</a>";
+		socket.emit("appId", appId => selectWorkspaceContext.innerHTML = "If this is the wrong workspace, <a href=\"https://slack.com/openid/connect/authorize?scope=openid profile&response_type=code&redirect_uri=https://unimpressed-unplastic-chelsey.ngrok-free.dev/automation-creator/automation-creator-bot/sign-in-with-slack&client_id=2210535565.10193337164310&state=" + appId + "\">sign in with Slack again</a> on the correct workspace.");
 	}
 });
 

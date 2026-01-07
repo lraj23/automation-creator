@@ -8,5 +8,5 @@ if ((new URL(document.URL)).searchParams.get("token")) {
 	});
 }
 
-const atHash = document.cookie.split("; ").find(cookie => cookie.startsWith("token=")).slice(6);
+const atHash = document.cookie.split("; ").find(cookie => cookie.startsWith("token="))?.slice(6);
 socket.emit("appId", appId => [...document.querySelectorAll(".addToSlack"), ...document.querySelectorAll(".signInWithSlack")].forEach(button => button.href += appId));

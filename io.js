@@ -16,7 +16,7 @@ io.on("connection", socket => {
 				name: process.env.AUTOMATION_CREATOR_DEVELOPMENT_WORKSPACE_NAME
 			}
 		});
-		const condition = workspace => (workspace.team?.id && workspace.team?.id === automationCreator.authedUsers.find(user => user.at_hash === atHash)["https://slack.com/team_id"]);
+		const condition = workspace => (workspace.team?.id && workspace.team?.id === (automationCreator.authedUsers.find(user => user.at_hash === atHash) || {})["https://slack.com/team_id"]);
 		const authedWorkspaces = automationCreator.authedWorkspaces.filter(workspace => condition(workspace));
 		if (authedWorkspaces.length > 1) automationCreator.authedWorkspaces = [
 			...automationCreator.authedWorkspaces.filter(workspace => !condition(workspace)),
