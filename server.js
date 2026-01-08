@@ -192,7 +192,7 @@ const server = http.createServer(async (req, res) => {
 				saveState(automationCreator);
 				switch (body.event.type) {
 					case "app_home_opened":
-						await publishView(automation.tokens.access_token, body.event.user, blocks[body.event.user === automation.tokens.authed_user.id ? "appHomePage" : "appHomePageOther"](automation));
+						await publishView(automation.tokens.access_token, body.event.user, await blocks[body.event.user === automation.tokens.authed_user.id ? automation.editingState?.withAI ? "appHomePageWithAI" : "appHomePage" : "appHomePageOther"](automation));
 						break;
 					case "reaction_added":
 						if (!automation.activeState) break;
@@ -378,11 +378,64 @@ const server = http.createServer(async (req, res) => {
 						runWorkflowStep(automation.activeState.steps[0], automation.tokens.access_token);
 						break;
 					}
+					case "edit-automation-ai-generate": {
+						if (!(await CONSTS.TEST_GENERATE())) break;
+						automation.editingState.withAI = true;
+						break;
+					}
+					case "edit-automation-manual-create": {
+						delete automation.editingState.withAI;
+						break;
+					}
+					case "edit-automation-with-ai-request": {
+						if (!(await CONSTS.TEST_GENERATE())) {
+							automation.editingState.withAI = null;
+							break;
+						}
+						const request = "edit-automation-with-ai-request" in values ? values["edit-automation-with-ai-request"].value : automation.editingState.aiRequest;
+						let aiResponse;
+						try {
+							aiResponse = (await CONSTS.AI_GENERATE(request))?.choices[0]?.message.content;
+						} catch (e) {
+							console.error(e);
+						}
+						automation.editingState = {
+							trigger: {},
+							steps: [],
+							withAI: true,
+							aiRequest: request || undefined,
+							aiResponse: aiResponse || undefined
+						};
+						break;
+					}
+					case "save-automation-with-ai": {
+						if (!(await CONSTS.TEST_GENERATE())) {
+							automation.editingState.withAI = null;
+							break;
+						}
+						const aiResponse = automation.editingState.aiResponse?.split(" ");
+						automation.activeState = automation.editingState = {
+							trigger: {
+								type: aiResponse[0] || undefined,
+								detail: aiResponse[1] || undefined,
+								specific: aiResponse[2] || undefined
+							},
+							steps: [
+								{
+									type: aiResponse[3] || undefined,
+									detail: aiResponse[4] || undefined,
+									specific: automation.editingState.aiResponse?.split("\n").slice(1).join("\n")
+								}
+							]
+						};
+						automation.editingState.withAI = undefined;
+						break;
+					}
 					default:
 						break;
 				}
 				saveState(automationCreator);
-				await publishView(automation.tokens.access_token, automation.tokens.authed_user.id, blocks.appHomePage(automation));
+				await publishView(automation.tokens.access_token, automation.tokens.authed_user.id, automation.editingState?.withAI ? await blocks.appHomePageWithAI(automation) : await blocks.appHomePage(automation));
 				res.writeHead(200, {
 					"Content-Type": "text/plain"
 				});

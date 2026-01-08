@@ -210,7 +210,7 @@ blocks.createAutomationStep2 = ({ automationRefreshToken }) => [
 	}
 ];
 
-blocks.appHomePage = automation => [
+blocks.appHomePage = async automation => [
 	{
 		type: "header",
 		text: {
@@ -226,6 +226,7 @@ blocks.appHomePage = automation => [
 		}
 	},
 	...blocks.appHomePageManualButton(automation.activeState),
+	...(await blocks.appHomePageWithAIButton(automation.editingState)),
 	{
 		type: "divider"
 	},
@@ -306,6 +307,123 @@ blocks.appHomePage = automation => [
 	...blocks.appHomePageUpdateButton(automation.editingState)
 ];
 
+blocks.appHomePageWithAI = async automation => [
+	{
+		type: "header",
+		text: {
+			type: "plain_text",
+			text: "Welcome to " + automation.displayInformation.automationName + "!"
+		}
+	},
+	{
+		type: "section",
+		text: {
+			type: "mrkdwn",
+			text: "From here you can view and edit your automation!"
+		}
+	},
+	{
+		type: "actions",
+		elements: [
+			{
+				type: "button",
+				text: {
+					type: "plain_text",
+					text: "Create Manually",
+					emoji: true
+				},
+				value: "edit-automation-manual-create",
+				action_id: "edit-automation-manual-create"
+			}
+		]
+	},
+	{
+		type: "divider"
+	},
+	{
+		type: "header",
+		text: {
+			type: "plain_text",
+			text: "Prompt"
+		}
+	},
+	{
+		type: "section",
+		text: {
+			type: "mrkdwn",
+			text: "Describe your automation to the AI. It should have a trigger of either being a button, a reaction added in a specific channel, or someone joining a specific channel"
+		}
+	},
+	{
+		type: "input",
+		element: {
+			type: "plain_text_input",
+			multiline: true,
+			action_id: "edit-automation-with-ai-request",
+			placeholder: {
+				type: "plain_text",
+				text: "Describe the automation"
+			},
+			initial_value: automation.editingState?.aiRequest || undefined
+		},
+		label: {
+			type: "plain_text",
+			text: "Describe your automation",
+			emoji: true
+		},
+		optional: false,
+		dispatch_action: true
+	},
+	...await blocks.appHomePageWithAIResponse(automation.editingState)
+];
+
+blocks.appHomePageWithAIResponse = async editingState => {
+	if (!await CONSTS.TEST_GENERATE()) {
+		return [];
+	}
+	if (!editingState.aiResponse) return [];
+	const response = editingState.aiResponse.split(" ");
+	if (response[0] === "notClear") return [{
+		type: "section",
+		text: {
+			type: "mrkdwn",
+			text: "Automation Creator AI was not able to figure out exactly what you want. Make sure you specifcy your trigger, with the channel and emoji if applicable. Also specify the step with the required details. If you want a certain channel, right click that channel and press Copy Link, then paste that in place of the channel."
+		}
+	}];
+	return [
+		{
+			type: "section",
+			text: {
+				type: "mrkdwn",
+				text: "This is what the AI understood. Please confirm this is what you want before saving your automation:"
+			}
+		},
+		{
+			type: "section",
+			text: {
+				type: "mrkdwn",
+				text: "You want your automation to run when " + CONSTS.AUTOMATION_CREATOR_TRIGGERS[response[0]]?.when?.split("{detail}")?.join("<#" + response[1] + ">")?.split("{specific}")?.join(":" + response[2] + ":") + ". When that happens, it will " + CONSTS.AUTOMATION_CREATOR_STEPS[response[3]]?.then?.split("{detail}")?.join("<#" + response[4] + ">")?.split("{specific}")?.join(editingState.aiResponse.split("\n").slice(1).join("\n"))
+			}
+		},
+		{
+			type: "actions",
+			elements: [
+				{
+					type: "button",
+					text: {
+						type: "plain_text",
+						text: "Confirm & Save",
+						emoji: true
+					},
+					style: "primary",
+					value: "save-automation-with-ai",
+					action_id: "save-automation-with-ai"
+				}
+			]
+		}
+	];
+};
+
 blocks.appHomePageManualButton = activeState => {
 	if (!activeState) return [];
 	if (activeState.trigger.type !== "manual") return [];
@@ -325,6 +443,33 @@ blocks.appHomePageManualButton = activeState => {
 		]
 	}];
 };
+
+blocks.appHomePageWithAIButton = async () => [
+	{
+		type: "actions",
+		elements: [
+			{
+				type: "button",
+				text: {
+					type: "plain_text",
+					text: ":sparkles: Generate with AI",
+					emoji: true
+				},
+				value: "edit-automation-ai-generate",
+				action_id: "edit-automation-ai-generate"
+			}
+		]
+	},
+	...(!(await CONSTS.TEST_GENERATE()) ? [{
+		type: "context",
+		elements: [
+			{
+				type: "mrkdwn",
+				text: "Generating with AI has temporarily been turned off since the AI service is down..."
+			}
+		]
+	}] : [])
+];
 
 blocks.appHomePageTriggerDetailWarning = editingState => {
 	if (!editingState.trigger.detail) return [];
@@ -559,7 +704,23 @@ blocks.appHomePageOther = automation => [
 			type: "mrkdwn",
 			text: automation.displayInformation.automationName + " was created by <@" + automation.tokens.authed_user.id + "> using Automation Creator. Its trigger is \"" + (CONSTS.AUTOMATION_CREATOR_TRIGGERS[automation.activeState?.trigger?.type]?.text || "None") + ",\" and it takes the action \"" + (CONSTS.AUTOMATION_CREATOR_STEPS[automation.activeState?.steps[0]?.type]?.text || "None") + ".\" Contact them to learn more!"
 		}
-	}
+	},
+	...(automation.activeState?.trigger?.type === "manual" ? [{
+		type: "actions",
+		elements: [
+			{
+				type: "button",
+				text: {
+					type: "plain_text",
+					text: "Run automation",
+					emoji: true
+				},
+				style: "primary",
+				value: "run-automation-manual",
+				action_id: "run-automation-manual"
+			}
+		]
+	}] : [])
 ];
 
 export default blocks;

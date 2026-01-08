@@ -10,7 +10,6 @@ const warn = async (workspaceId, channel, user, text) => await apps.getApp(works
 	blocks: blocks.warn(text),
 	text
 });
-const apiURL = process.env.AUTOMATION_CREATOR_API_URL;
 
 app.command("/create-automation", async ({ ack, body: { user_id }, respond }) => {
 	await ack();
