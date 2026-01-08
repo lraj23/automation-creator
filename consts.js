@@ -95,7 +95,60 @@ CONSTS.WEB_PATHS = {
 	"/general.js": ["general.js", "text/js"],
 	"/index.js": ["index.js", "text/js"],
 	"/create": ["create.html", "text/html"],
-	"/create.js": ["create.js", "text/js"]
+	"/create.js": ["create.js", "text/js"],
+	"/create/2": ["create2.html", "text/html"],
+	"/create2.js": ["create2.jS", "text/js"]
 };
+
+CONSTS.GENERATE_MANIFEST = (displayInformation, token) => ({
+	token,
+	manifest: JSON.stringify({
+		display_information: {
+			name: displayInformation.automationName,
+			long_description: displayInformation.automationLongDescription,
+			description: displayInformation.automationShortDescription,
+			background_color: displayInformation.automationColor
+		},
+		settings: {
+			socket_mode_enabled: false,
+			interactivity: {
+				is_enabled: true,
+				request_url: process.env.AUTOMATION_CREATOR_API_URL + "/interactivity",
+				message_menu_options_url: process.env.AUTOMATION_CREATOR_API_URL + "/interactivity"
+			},
+			event_subscriptions: {
+				request_url: process.env.AUTOMATION_CREATOR_API_URL + "/event-subscriptions",
+				bot_events: [
+					"app_home_opened",
+					"message.im",
+					"message.channels",
+					"message.groups",
+					"message.mpim",
+					"reaction_added",
+					"member_joined_channel"
+				]
+			}
+		},
+		features: {
+			app_home: {
+				home_tab_enabled: true,
+				messages_tab_enabled: true,
+				messages_tab_read_only_enabled: false
+			},
+			bot_user: {
+				display_name: displayInformation.automationName,
+				always_online: true
+			}
+		},
+		oauth_config: {
+			redirect_urls: [
+				process.env.AUTOMATION_CREATOR_API_URL + "/installed"
+			],
+			scopes: {
+				bot: CONSTS.AUTOMATION_CREATOR_SCOPES
+			}
+		}
+	})
+});
 
 export default CONSTS;

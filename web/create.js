@@ -3,9 +3,7 @@ const refreshToken = document.getElementById("refreshToken");
 const createAutomationError = document.getElementById("createAutomationError");
 const createAutomation = document.getElementById("createAutomation");
 
-socket.emit("atHash", atHash, response => {
-	if (!response) location.href = "/";
-});
+socket.emit("atHash", atHash, response => response ? document.getElementById("signedInWorkspace").innerText = response["https://slack.com/team_name"] || response["https://slack.com/enterprise_name"] || "?" : location.href = "/");
 
 socket.emit("authedWorkspace", atHash, response => {
 	if (response.name) {
@@ -17,10 +15,4 @@ socket.emit("authedWorkspace", atHash, response => {
 	}
 });
 
-createAutomation.onclick = () => {
-	if (selectWorkspace.value === "none") return createAutomationError.innerText = "Choose a workspace.";
-	socket.emit("testWorkspaceMatch", selectWorkspace.value, refreshToken.value, response => {
-		if (!response.ok) createAutomationError.innerText = response.error;
-		else createAutomationError.innerText = "";
-	});
-};
+createAutomation.onclick = () => selectWorkspace.href ? socket.emit("testWorkspaceMatch", atHash, refreshToken.value, response => response.ok ? location.href = "/create/2" : createAutomationError.innerText = response.error) : createAutomationError.innerText = "Make sure to add Automation Creater to your workspace first!";

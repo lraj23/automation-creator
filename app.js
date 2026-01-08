@@ -88,7 +88,7 @@ app.action("create-automation", async ({ ack, body: { user: { id: user }, channe
 	const automationCreator = getAutomationCreator();
 	if (!automationCreator.inProgressAutomations[user]) return await respond("Something went wrong. Try running /create-automation again!");
 	values = CONSTS.GET_READABLE_VALUES(values);
-	let refreshToken = "ignore-automation-configuration-refresh-token" in values ? values["ignore-automation-configuration-refresh-token"].value : automationCreator.inProgressAutomations[user].automationRefreshToken;
+	const refreshToken = "ignore-automation-configuration-refresh-token" in values ? values["ignore-automation-configuration-refresh-token"].value : automationCreator.inProgressAutomations[user].automationRefreshToken;
 
 	saveState(automationCreator);
 	let token;
@@ -102,56 +102,7 @@ app.action("create-automation", async ({ ack, body: { user: { id: user }, channe
 	}
 
 	try {
-		const automation = await apps.getApp(teamId || enterpriseId).client.apps.manifest.create({
-			token,
-			manifest: JSON.stringify({
-				display_information: {
-					name: automationCreator.inProgressAutomations[user].automationName,
-					long_description: automationCreator.inProgressAutomations[user].automationLongDescription,
-					description: automationCreator.inProgressAutomations[user].automationShortDescription,
-					background_color: "#" + automationCreator.inProgressAutomations[user].automationColor
-				},
-				settings: {
-					socket_mode_enabled: false,
-					interactivity: {
-						is_enabled: true,
-						request_url: apiURL + "/interactivity",
-						message_menu_options_url: apiURL + "/interactivity"
-					},
-					event_subscriptions: {
-						request_url: apiURL + "/event-subscriptions",
-						bot_events: [
-							"app_home_opened",
-							"message.im",
-							"message.channels",
-							"message.groups",
-							"message.mpim",
-							"reaction_added",
-							"member_joined_channel"
-						]
-					}
-				},
-				features: {
-					app_home: {
-						home_tab_enabled: true,
-						messages_tab_enabled: true,
-						messages_tab_read_only_enabled: false
-					},
-					bot_user: {
-						display_name: automationCreator.inProgressAutomations[user].automationName,
-						always_online: true
-					}
-				},
-				oauth_config: {
-					redirect_urls: [
-						apiURL + "/installed"
-					],
-					scopes: {
-						bot: CONSTS.AUTOMATION_CREATOR_SCOPES
-					}
-				}
-			})
-		});
+		const automation = await apps.getApp(teamId || enterpriseId).client.apps.manifest.create(CONSTS.GENERATE_MANIFEST(automationCreator.inProgressAutomations[user], token));
 		automation.displayInformation = automationCreator.inProgressAutomations[user];
 		delete automationCreator.inProgressAutomations[user];
 

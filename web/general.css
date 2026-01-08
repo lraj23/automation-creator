@@ -19,7 +19,8 @@ p {
 button,
 a.button-a,
 select,
-input {
+input,
+textarea {
 	background-color: transparent;
 	border: 1px solid #494c51;
 	border-radius: 7px;
@@ -33,12 +34,18 @@ input {
 	vertical-align: bottom;
 }
 
+button,
+a.button-a {
+	text-align: center;
+}
+
 select {
 	width: 225px;
 	font-weight: normal;
 }
 
-input {
+input,
+textarea {
 	display: block;
 	min-width: 300px;
 	font-weight: normal;
@@ -79,6 +86,27 @@ label {
 
 #refreshToken {
 	width: 500px;
+}
+
+#automationName {
+	width: 400px;
+}
+
+#automationShortDescription {
+	width: 600px;
+	resize: none;
+}
+
+#automationLongDescription {
+	width: 600px;
+	resize: vertical;
+}
+
+#automationColor {
+	min-width: 50px;
+	height: 50px;
+	padding: 0;
+	border: none;
 }
 
 #createAutomationError {

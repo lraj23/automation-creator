@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="stylesheet" href="../general.css">
+		<title>Automation Creator</title>
+	</head>
+	<body>
+		<h1><a href="../">Automation Creator</a> / Create an Automation</h1>
+		<p>Create an automation now from this page. Alternatively, you can go to your workspace and run the /create-automation command in any channel.</p>
+		<hr>
+		<p>Before you can finish making your automation, just enter these details:</p>
+		<span class="context">Keep in mind that you can't change these details later.</span>
+		<hr>
+		<label for="automationName" id="automationNameLabel">Automation name</label>
+		<input id="automationName" placeholder="Max 35 characters">
+		<label for="automationShortDescription" id="automationShortDescriptionLabel">Short description</label>
+		<textarea id="automationShortDescription" placeholder="Max 140 characters" rows="2"></textarea>
+		<label for="automationLongDescription" id="automationLongDescriptionLabel">Long description</label>
+		<textarea id="automationLongDescription" placeholder="Min 175 characters; max 4000 characters" rows="4"></textarea>
+		<label for="automationColor" id="automationColorLabel">Automation color</label>
+		<input id="automationColor" type="color">
+		<hr>
+		<button id="createAutomation">Create Automation (for real now)</button>
+		<span id="createAutomationError"></span>
+		<br>
+		<span class="context">Your tokens will be used to create and edit your automations, as well as to verify your identity, and will not be stored thereafter. Everything is transparent and open source at <a href="https://www.github.com/lraj23/automation-creator">lraj23/automation-creator</a> if you want to check for yourself.</span>
+		<span class="context">Keep in mind that your automation and tokens are under your account, and that means you can always take control of them through the Slack page at <a href="https://api.slack.com/apps">https://api.slack.com/apps</a> if you have issues. <a href="https://www.github.com/lraj23">lraj23</a>, who created Automation Creator open source at <a href="https://www.github.com/lraj23/automation-creator">lraj23/automation-creator</a>, is not responsible for the actions taken by your automations.</span>
+		<script src="/socket.io/socket.io.js" defer></script>
+		<script src="../general.js" defer></script>
+		<script src="../create2.js" defer></script>
+	</body>
+</html>
