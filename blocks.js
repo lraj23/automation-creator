@@ -132,7 +132,7 @@ blocks.createAutomationStep2 = ({ automationRefreshToken }) => [
 		type: "section",
 		text: {
 			type: "mrkdwn",
-			text: "Enter your app configuration refresh token. Your actual configuration token is used to create and manage your automation, but it expires soon after being issued. The refresh token is used to renew the first token, and so it is all that is necessary to maintain the bot."
+			text: "Enter your app configuration refresh token. Your actual configuration token is used to create your automation, but it expires soon after being issued. The refresh token is used to renew the first token, and so it is all that is necessary."
 		}
 	},
 	{
@@ -387,7 +387,7 @@ blocks.appHomePageWithAIResponse = async editingState => {
 		type: "section",
 		text: {
 			type: "mrkdwn",
-			text: "Automation Creator AI was not able to figure out exactly what you want. Make sure you specifcy your trigger, with the channel and emoji if applicable. Also specify the step with the required details. If you want a certain channel, right click that channel and press Copy Link, then paste that in place of the channel."
+			text: "Automation Creator AI was not able to figure out exactly what you want. Make sure you specify your trigger, with the channel and emoji if applicable. Also specify the step with the required details. When you need to specify a certain channel, right click that channel and press Copy Link, then paste that in place of the channel."
 		}
 	}];
 	return [
