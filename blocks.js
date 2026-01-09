@@ -402,7 +402,7 @@ blocks.appHomePageWithAIResponse = async editingState => {
 			type: "section",
 			text: {
 				type: "mrkdwn",
-				text: "You want your automation to run when " + CONSTS.AUTOMATION_CREATOR_TRIGGERS[response[0]]?.when?.split("{detail}")?.join("<#" + response[1] + ">")?.split("{specific}")?.join(":" + response[2] + ":") + ". When that happens, it will " + CONSTS.AUTOMATION_CREATOR_STEPS[response[3]]?.then?.split("{detail}")?.join("<#" + response[4] + ">")?.split("{specific}")?.join(editingState.aiResponse.split("\n").slice(1).join("\n"))
+				text: "You want your automation to run when " + CONSTS.AUTOMATION_CREATOR_TRIGGERS[response[0]]?.when?.split("{detail}")?.join("<#" + response[1] + ">")?.split("{specific}")?.join(":" + response[2] + ":") + ". When that happens, it will " + CONSTS.AUTOMATION_CREATOR_STEPS[response[3]]?.then?.split("{detail}")?.join("<#" + response[4].split("\n")[0] + ">")?.split("{specific}")?.join(editingState.aiResponse.split("\n").slice(1).join("\n"))
 			}
 		},
 		{
