@@ -101,6 +101,7 @@ app.action("create-automation", async ({ ack, body: { user: { id: user }, channe
 	}
 
 	try {
+		automationCreator.inProgressAutomations[user].automationColor = "#" + automationCreator.inProgressAutomations[user].automationColor;
 		const automation = await apps.getApp(teamId || enterpriseId).client.apps.manifest.create(CONSTS.GENERATE_MANIFEST(automationCreator.inProgressAutomations[user], token));
 		automation.displayInformation = automationCreator.inProgressAutomations[user];
 		delete automationCreator.inProgressAutomations[user];
